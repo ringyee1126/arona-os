@@ -136,7 +136,7 @@ PanelWindow {
                 source: Theme.assets + "icons/search.svg"
                 sourceSize.width: width * 2; sourceSize.height: height * 2
             }
-            Text { anchors.horizontalCenter: parent.horizontalCenter; text: "아로나 검색"; color: Theme.ink; font.family: Theme.font; font.pixelSize: 17 * dock.s; font.weight: Font.Black }
+            Text { anchors.horizontalCenter: parent.horizontalCenter; text: Arona.name + " 검색"; color: Theme.ink; font.family: Theme.font; font.pixelSize: 17 * dock.s; font.weight: Font.Black }
         }
         MouseArea { id: searchMa; anchors.fill: parent; onPressedChanged: if (pressed) Sfx.tap(); onClicked: Ui.launcherOpen = true }
     }

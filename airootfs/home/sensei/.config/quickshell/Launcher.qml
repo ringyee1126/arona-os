@@ -71,7 +71,7 @@ PanelWindow {
     }))
     readonly property var moreResults: q ? [
         { kind: "web", group: "더 찾기", title: "크롬에서 '" + q + "' 검색", sub: "google.com" },
-        { kind: "ask", group: "더 찾기", title: "아로나에게 '" + q + "' 부탁하기", sub: "정리, 요약, 파일 옮기기 등" }
+        { kind: "ask", group: "더 찾기", title: Arona.name + "에게 '" + q + "' 부탁하기", sub: "정리, 요약, 파일 옮기기 등" }
     ] : []
     readonly property int found: fileResults.length + appResults.length
     readonly property var results: tab === "app" ? appResults : tab === "file" ? fileResults : tab === "web" ? moreResults.slice(0, 1)
@@ -205,7 +205,7 @@ PanelWindow {
             Rectangle {
                 width: parent.width; height: 56 * ln.s; color: Theme.ink
                 SkewRect { x: 26 * ln.s; anchors.verticalCenter: parent.verticalCenter; width: 7 * ln.s; height: 22 * ln.s; color: Theme.sky }
-                Text { x: 46 * ln.s; anchors.verticalCenter: parent.verticalCenter; text: ln.mode === "ask" ? "아로나에게 부탁" : "아로나 검색"; color: "white"; font.family: Theme.font; font.pixelSize: 21 * ln.s; font.weight: Font.ExtraBold }
+                Text { x: 46 * ln.s; anchors.verticalCenter: parent.verticalCenter; text: Arona.name + (ln.mode === "ask" ? "에게 부탁" : " 검색"); color: "white"; font.family: Theme.font; font.pixelSize: 21 * ln.s; font.weight: Font.ExtraBold }
                 Rectangle {
                     anchors.right: parent.right; anchors.rightMargin: 26 * ln.s; anchors.verticalCenter: parent.verticalCenter
                     width: capText.implicitWidth + 20 * ln.s; height: 28 * ln.s; radius: 6 * ln.s; color: "#26FFFFFF"
@@ -250,7 +250,7 @@ PanelWindow {
                     Text {
                         visible: !input.text
                         anchors { left: input.left; verticalCenter: parent.verticalCenter }
-                        text: ln.mode === "ask" ? "아로나에게 부탁할 일을 적어 주세요" : "앱, 파일, 하고 싶은 일을 입력하세요"
+                        text: ln.mode === "ask" ? Arona.name + "에게 부탁할 일을 적어 주세요" : "앱, 파일, 하고 싶은 일을 입력하세요"
                         color: "#9AB0C2"; font.family: Theme.font; font.pixelSize: 24 * ln.s
                     }
                     Rectangle {
@@ -429,7 +429,7 @@ PanelWindow {
                     Avatar { s: ln.s; width: 54 * ln.s; height: width }
                     Column {
                         spacing: 4 * ln.s
-                        Text { text: "아로나"; color: Theme.skyDeep; font.family: Theme.font; font.pixelSize: 14 * ln.s; font.weight: Font.ExtraBold }
+                        Text { text: Arona.name; color: Theme.skyDeep; font.family: Theme.font; font.pixelSize: 14 * ln.s; font.weight: Font.ExtraBold }
                         Rectangle {
                             width: sayText.implicitWidth + 36 * ln.s; height: sayText.implicitHeight + 28 * ln.s
                             radius: 16 * ln.s; color: "white"; border.color: "#B7DCF1"; border.width: 2 * ln.s
@@ -455,7 +455,7 @@ PanelWindow {
                 x: 26 * ln.s; height: 50 * ln.s; spacing: 22 * ln.s
                 Repeater {
                     model: ln.mode === "ask" ? [["Tab", "검색으로"], ["Esc", "검색으로"]]
-                                            : [["↑↓", "이동"], ["Enter", "열기"], ["Tab", "아로나에게 부탁"], ["Esc", "닫기"]]
+                                            : [["↑↓", "이동"], ["Enter", "열기"], ["Tab", Arona.name + "에게 부탁"], ["Esc", "닫기"]]
                     delegate: Row {
                         required property var modelData
                         anchors.verticalCenter: parent.verticalCenter

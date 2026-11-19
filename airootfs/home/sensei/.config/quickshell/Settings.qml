@@ -603,7 +603,7 @@ FloatingWindow {
             Card {
                 Item {
                     width: parent.width; height: 40 * win.s
-                    T { anchors.verticalCenter: parent.verticalCenter; text: "아로나 목소리"; font.pixelSize: 18 * win.s; font.weight: Font.Bold }
+                    T { anchors.verticalCenter: parent.verticalCenter; text: Arona.name + " 목소리"; font.pixelSize: 18 * win.s; font.weight: Font.Bold }
                     Toggle { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; on: Arona.settings.voice; onToggled: Arona.settings.voice = !Arona.settings.voice }
                 }
                 Sub { text: "인사, 쓰다듬기처럼 정해진 대사를 녹음된 목소리로 들려줘요." }
@@ -696,7 +696,7 @@ FloatingWindow {
             }
             Timer { id: toastTimer; interval: 2500; onTriggered: ap.toast = "" }
 
-            Head { title: "아로나"; desc: "바탕화면 아로나와의 대화 설정" }
+            Head { title: "아로나"; desc: "바탕화면 " + Arona.name + "와의 대화 설정" }
             Card {
                 border.color: Theme.sky
                 gradient: Gradient { orientation: Gradient.Horizontal; GradientStop { position: 0; color: "#E6F5FD" } GradientStop { position: 1; color: "white" } }
@@ -707,7 +707,7 @@ FloatingWindow {
                         anchors.left: ava.right; anchors.leftMargin: 18 * win.s; anchors.verticalCenter: parent.verticalCenter
                         spacing: 4 * win.s
                         T {
-                            text: "아로나 · " + (ap.chk === "ok" ? "연결됨" : !Arona.ready ? "API 키가 필요해요" : "대기 중")
+                            text: Arona.name + " · " + (ap.chk === "ok" ? "연결됨" : !Arona.ready ? "API 키가 필요해요" : "대기 중")
                             font.pixelSize: 20 * win.s; font.weight: Font.Bold
                         }
                         Row {
@@ -819,7 +819,7 @@ FloatingWindow {
                     Area {
                         id: customArea
                         x: 166 * win.s; width: parent.width - x
-                        placeholder: "아로나가 어떤 성격으로 말할지 직접 적어 주세요. 적은 내용이 그대로 시스템 프롬프트가 돼요."
+                        placeholder: Arona.name + "가 어떤 성격으로 말할지 직접 적어 주세요. 적은 내용이 그대로 시스템 프롬프트가 돼요."
                         text: Arona.settings.customPersona
                     }
                 }

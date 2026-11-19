@@ -13,7 +13,7 @@ Singleton {
         list = l
         file.setText(l.map(t => (t.done ? "x " : "") + t.text).join("\n") + (l.length ? "\n" : ""))
     }
-    function toggle(i) { const l = list.slice(); l[i] = { done: !l[i].done, text: l[i].text }; save(l) }
+    function toggle(i) { if (!list[i].done) Arona.react("task-done"); const l = list.slice(); l[i] = { done: !l[i].done, text: l[i].text }; save(l) }
     function add(text) { if (String(text).trim()) save(list.concat([{ done: false, text: String(text).trim() }])) }
     function remove(i) { const l = list.slice(); l.splice(i, 1); save(l) }
 

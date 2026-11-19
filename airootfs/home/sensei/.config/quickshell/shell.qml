@@ -1,6 +1,8 @@
 // Shittim OS desktop shell. One desktop, top bar and dock per screen; one launcher.
 import Quickshell
 import Quickshell.Io
+import Quickshell.Wayland
+import Quickshell.Services.UPower
 import QtQuick
 
 ShellRoot {
@@ -25,8 +27,8 @@ ShellRoot {
     }
     Connections {
         target: Ui
-        function onLauncherOpenChanged() { Sfx.play(Ui.launcherOpen ? "open" : "close") }
-        function onChatOpenChanged() { Sfx.play(Ui.chatOpen ? "open" : "close") }
+        function onLauncherOpenChanged() { Sfx.play(Ui.launcherOpen ? "open" : "close"); if (Ui.launcherOpen) Arona.react("search") }
+        function onChatOpenChanged() { Sfx.play(Ui.chatOpen ? "open" : "close"); if (Ui.chatOpen) Arona.react("chat") }
         function onMenuOpenChanged() { Sfx.play(Ui.menuOpen ? "open" : "close") }
     }
     Connections {
@@ -37,6 +39,29 @@ ShellRoot {
     IpcHandler {
         target: "chat"
         function toggle(): void { Ui.chatOpen = !Ui.chatOpen }
+    }
+
+    // 다른 프로세스(설정 창, 스크립트)가 아로나에게 한마디 시킨다: quickshell ipc call arona react <상황>
+    IpcHandler {
+        target: "arona"
+        function react(ev: string): void { Arona.react(ev) }
+    }
+    // 창이 하나도 없는 바탕화면을 5분 보고 있으면 말을 건다. 자리를 비웠을 때 계속 떠들지 않게 연속 3번까지만.
+    property int idleSaid: 0
+    readonly property int windows: ToplevelManager.toplevels.values.length
+    onWindowsChanged: idleSaid = 0
+    Timer {
+        interval: 300000; repeat: true
+        running: windows === 0 && !lockScreen.locked && !Ui.chatOpen && !Ui.launcherOpen && idleSaid < 3
+        onTriggered: { idleSaid++; Arona.react("idle") }
+    }
+    // 배터리 20% 아래로 내려가면 한 번, 충전기를 꽂으면 한 번
+    property bool lowSaid: false
+    readonly property real battery: UPower.displayDevice.percentage <= 1 ? UPower.displayDevice.percentage * 100 : UPower.displayDevice.percentage
+    onBatteryChanged: if (UPower.onBattery && battery < 20 && !lowSaid) { lowSaid = true; Arona.react("battery-low") }
+    Connections {
+        target: UPower
+        function onOnBatteryChanged() { if (!UPower.onBattery) { lowSaid = false; Arona.react("battery-charging") } }
     }
 
     // Hyprland's Super+L (and the lock right after login) runs: quickshell ipc call lock lock

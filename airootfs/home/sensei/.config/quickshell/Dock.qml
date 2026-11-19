@@ -43,7 +43,7 @@ PanelWindow {
     ]
     function launch(app) {
         if (app.cmd[0] === "settings") Ui.settings("toggle")
-        else if (app.cmd.length) Quickshell.execDetached(app.cmd)
+        else if (app.cmd.length) { Arona.react("launch"); Quickshell.execDetached(app.cmd) }
         else Arona.say(Arona.lines["not-ready"])
     }
 
@@ -169,7 +169,7 @@ PanelWindow {
         MouseArea {
             id: bigMa; anchors.fill: parent; enabled: dock.workReady
             onPressedChanged: if (pressed) Sfx.tap()
-            onClicked: Quickshell.execDetached(["shittim-work"])
+            onClicked: { Arona.react("work"); Quickshell.execDetached(["sh", "-c", "sleep 3; exec shittim-work"]) }
         }
     }
 }

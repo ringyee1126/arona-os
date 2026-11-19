@@ -32,8 +32,58 @@ Singleton {
         "err-toolong": "대답이 너무 길어서 잘렸어요.\n질문을 나눠 주세요.",
         "err-empty": "대답이 비어 있어요. 다시 물어봐 주세요.",
         "err-filebig": "파일이 너무 커요.\n모두 합쳐 15MB까지만 받을 수 있어요.",
-        "err-fileread": "파일을 읽지 못했어요."
+        "err-fileread": "파일을 읽지 못했어요.",
+        "pat-4": "선생님… 조금 부끄러워요.",
+        "pat-5": "에헤헤, 기분 좋아요~",
+        "lock-morning": "좋은 아침이에요, 선생님! 오늘도 시작해 볼까요?\n싯딤의 상자에 접속하려면 비밀번호를 알려주세요.",
+        "lock-day": "선생님, 다시 오셨네요! 기다리고 있었어요.\n싯딤의 상자에 접속하려면 비밀번호를 알려주세요.",
+        "lock-evening": "오늘도 수고 많으셨어요, 선생님.\n싯딤의 상자에 접속하려면 비밀번호를 알려주세요.",
+        "lock-night": "이렇게 늦은 시간까지… 무리하지 마세요, 선생님.\n싯딤의 상자에 접속하려면 비밀번호를 알려주세요.",
+        "lock-ok": "확인됐어요! 어서 오세요, 선생님!",
+        "lock-fail-1": "어라? 비밀번호가 틀렸어요, 선생님!\n다시 한 번 입력해 주세요.",
+        "lock-fail-2": "또 틀렸어요…\nCaps Lock이 켜져 있지 않은지 확인해 보세요.",
+        "lock-fail-3": "선생님…! 혹시 선생님이 아니신가요?!\n수상해요! 아로나가 지켜보고 있어요!",
+        "lock-error": "인증 장치에 문제가 생겼어요…\n잠시 후 다시 시도해 주세요.",
+        "idle-1": "선생님, 뭐 하고 계세요?\n아로나랑 놀아 주세요!",
+        "idle-2": "바탕화면만 보고 계시네요…\n혹시 아로나를 보고 계신 건가요?",
+        "idle-3": "오늘은 무슨 일을 하실 거예요, 선생님?",
+        "idle-4": "심심하면 아로나한테 말 걸어 주세요!",
+        "idle-5": "하암… 아, 아니에요!\n졸지 않았어요!",
+        "work-1": "업무를 시작할게요, 선생님!\n키보토스가 기다리고 있어요!",
+        "work-2": "샬레로 출근이에요!\n오늘도 학생들을 잘 부탁드려요.",
+        "work-3": "블루 아카이브를 실행할게요.\n잠시만 기다려 주세요!",
+        "power-confirm": "정말 끄시는 거예요?\n한 번 더 누르면 진행할게요.",
+        "power-off-1": "오늘도 수고하셨어요, 선생님.\n푹 쉬고 내일 또 만나요!",
+        "power-off-2": "싯딤의 상자를 종료할게요.\n안녕히 주무세요, 선생님.",
+        "power-reboot": "금방 다시 올게요, 선생님!\n잠시만 기다려 주세요.",
+        "power-sleep": "잠깐 쉬고 계세요.\n아로나도 조금만 눈 붙일게요…",
+        "settings-1": "설정을 열었어요.\n바꾸고 싶은 게 있으세요?",
+        "settings-2": "싯딤의 상자를 손보시는 거예요?\n아로나가 도와드릴게요!",
+        "search-1": "무엇을 찾아 드릴까요, 선생님?",
+        "search-2": "아로나 검색이에요!\n뭐든지 물어보세요.",
+        "chat-1": "네, 선생님! 부르셨어요?",
+        "chat-2": "아로나랑 이야기해요, 선생님!",
+        "thinking-1": "음… 잠깐만요!",
+        "thinking-2": "생각하고 있어요…",
+        "thinking-3": "잠시만 기다려 주세요, 선생님!",
+        "launch-1": "네, 바로 열어 드릴게요!",
+        "launch-2": "알겠어요, 선생님!",
+        "launch-3": "여기 있어요!",
+        "notify-1": "선생님, 새 알림이 왔어요!",
+        "notify-2": "알림이에요, 선생님.\n확인해 보세요!",
+        "shot-1": "찰칵! 스크린샷을 저장했어요.",
+        "shot-2": "잘 찍혔어요, 선생님!",
+        "task-done-1": "하나 끝내셨네요!\n대단해요, 선생님!",
+        "task-done-2": "수고하셨어요!\n이 기세로 계속 가요!",
+        "battery-low": "선생님, 배터리가 얼마 안 남았어요!\n충전기를 연결해 주세요.",
+        "battery-charging": "충전을 시작했어요.\n이제 안심이에요!"
     })
+    // 상황(ev)에 맞는 대사 하나: 이름이 ev 이거나 ev-1, ev-2 … 인 것 중에서 고른다
+    function pick(ev) {
+        const ks = Object.keys(lines).filter(k => k === ev || /^-\d+$/.test(k.slice(ev.length)) && k.startsWith(ev))
+        return ks.length ? lines[ks[Math.floor(Math.random() * ks.length)]] : ""
+    }
+    function react(ev) { const t = pick(ev); if (t) say(t) }   // 말풍선 + 목소리
     function speak(text) {
         if (!cfg.voice) return
         for (const k in lines) if (lines[k] === text)
@@ -49,8 +99,7 @@ Singleton {
         if (h >= 18 && h < 23) return lines["greet-evening"]
         return lines["greet-night"]
     }
-    readonly property var patLines: [lines["pat-1"], lines["pat-2"], lines["pat-3"]]
-
+    
     // ---------- settings (carried over from ARONA 1.0's data/settings.json) ----------
     property alias settings: cfg
     readonly property bool ready: cfg.apiKey.trim() !== ""
@@ -143,7 +192,7 @@ Singleton {
         if (replying || !String(text).trim()) return
         replyText = ""; replyError = ""
         if (!ready) return fail(lines["err-nokey"])
-        replying = true; replyMood = "thinking"
+        replying = true; replyMood = "thinking"; speak(pick("thinking"))
         const model = cfg.model.trim() || "gemini-flash-latest"
         job = { turns: history.concat([{ role: "user", text: String(text), parts: parts || null }]),
                 models: model === fallbackModel ? [model, model] : [model, fallbackModel, model], i: 0 }

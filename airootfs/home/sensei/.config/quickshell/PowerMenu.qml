@@ -28,9 +28,11 @@ PanelWindow {
         { key: "off", name: "시스템 종료", icon: "power", cmd: ["systemctl", "poweroff"], confirm: true }
     ]
     function run(a) {
-        if (a.confirm && armed !== a.key) { armed = a.key; disarm.restart(); return }
+        if (a.confirm && armed !== a.key) { armed = a.key; disarm.restart(); Arona.react("power-confirm"); return }
         Ui.menuOpen = false
-        Quickshell.execDetached(a.cmd)
+        if (a.key === "lock") return Quickshell.execDetached(a.cmd)
+        Arona.react("power-" + a.key)   // 인사를 끝까지 하고 나서 끈다
+        Quickshell.execDetached(["sh", "-c", "sleep 4; exec \"$@\"", "sh"].concat(a.cmd))
     }
 
     // volume (same default output as the top bar) and backlight (absent on external monitors / the VM)

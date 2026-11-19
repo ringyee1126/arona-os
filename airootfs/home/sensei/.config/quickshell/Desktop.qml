@@ -55,7 +55,7 @@ PanelWindow {
             cursorShape: Qt.PointingHandCursor
             onClicked: {
                 arona.patted = true; patTimer.restart()
-                Arona.say(Arona.patLines[Math.floor(Math.random() * Arona.patLines.length)])
+                Arona.react("pat")
             }
         }
     }

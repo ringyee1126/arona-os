@@ -108,6 +108,9 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
 - 목소리: 음성 서버는 쓰지 않는다 (사용자 결정). 정해진 대사(`Arona.qml`의 `lines` 표: 인사·쓰다듬기·오류)만
   `assets/voice/<arona|plana>/<이름>.wav` 녹음을 튼다 (`Arona.speak()`). 파일이 없으면 조용히 넘어간다. 설정 → 소리 → 아로나 목소리.
   대본은 `assets/voice/README.md` (= `~/문서/아로나-음성-대본.md`). 사용자가 데스크탑에서 음성을 만들어 넣을 예정.
+  상황별 대사: `Arona.react("<상황>")` = 이름이 `<상황>` 또는 `<상황>-1,-2…` 인 대사 중 하나를 말풍선+목소리로.
+  잠금화면, 쓰다듬기, 방치(창 없이 5분), 업무 시작(3초 뒤 실행), 전원(4초 뒤 실행), 설정·검색·대화 열기, 앱 실행, 알림, 스크린샷,
+  할 일 완료, 배터리. 다른 프로세스에서는 `quickshell ipc call arona react <상황>`. **`lines`를 고치면 대본(README)도 고칠 것.**
 - Steam: 고장이 아니었다. 첫 실행 때 창 없이 몇 분간 약 700MB를 받는다 (`~/.local/share/Steam/logs/bootstrap_log.txt`).
 
 루트 필요 (apply-system.sh)

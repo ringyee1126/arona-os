@@ -14,7 +14,8 @@ Singleton {
         actionsSupported: true
         onNotification: n => {
             n.tracked = true
-            Arona.say((n.appName ? n.appName + " · " : "") + n.summary)
+            if (n.summary === "스크린샷 저장") return Arona.react("shot")
+            Arona.say((n.appName ? n.appName + " · " : "") + n.summary); Arona.speak(Arona.pick("notify"))
         }
     }
 }

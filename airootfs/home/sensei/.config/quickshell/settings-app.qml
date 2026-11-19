@@ -16,5 +16,5 @@ ShellRoot {
         target: Ui
         function onSettingsOpenChanged() { if (!Ui.settingsOpen) { Sfx.play("close"); Qt.quit() } }
     }
-    Component.onCompleted: { Sfx.play("open"); Ui.openSettings(Quickshell.env("SHITTIM_SETTINGS_PAGE") || "wifi") }
+    Component.onCompleted: { Sfx.play("open"); Quickshell.execDetached(["quickshell", "ipc", "call", "arona", "react", "settings"]); Ui.openSettings(Quickshell.env("SHITTIM_SETTINGS_PAGE") || "wifi") }
 }

@@ -10,6 +10,17 @@ import QtQuick
 Singleton {
     id: arona
     signal say(string text)
+    onSay: text => speak(text)
+
+    // 목소리: 데스크탑의 음성 복제 서버(GPT-SoVITS api_v2)에 text= 를 붙여 요청하고 받은 wav를 튼다.
+    // 서버가 꺼져 있으면 2초 안에 조용히 포기한다 (알림 없음). 새 말이 오면 하던 말은 끊는다.
+    function speak(text) {
+        const t = text.replace(/```[\s\S]*?```/g, "").trim()
+        if (!cfg.voice || !cfg.voiceUrl.trim() || !t) return
+        Quickshell.execDetached(["sh", "-c", "pkill -f '^pw-play --media-role Communication '; f=$XDG_RUNTIME_DIR/shittim-voice-$$.wav; "
+            + "curl -sfG --connect-timeout 2 --max-time 90 --data-urlencode \"text=$2\" -o \"$f\" \"$1\" && pw-play --media-role Communication \"$f\"; rm -f \"$f\"",
+            "sh", cfg.voiceUrl.trim(), t])
+    }
 
     function greeting() {
         const h = Theme.hour
@@ -43,6 +54,8 @@ Singleton {
             property string userName: "선생님"
             property string memoryNotes: ""
             property bool sounds: true          // 버튼 효과음 (Sfx.qml)
+            property bool voice: true           // 아로나 목소리 (speak())
+            property string voiceUrl: ""        // 음성 복제 서버, 예: http://192.168.0.10:9880/tts?text_lang=ko&ref_audio_path=...
         }
     }
 

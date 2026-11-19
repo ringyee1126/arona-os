@@ -17,8 +17,8 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("xdg-user-dirs-update")
     hl.exec_cmd("shittim-dev-sync")   -- VM only: live-reloads ~/.config from the Windows project
     hl.exec_cmd("fcitx5 -d")
-    -- 크롬·GTK 앱이 직접 그리는 제목 표시줄에도 □ 버튼 (기본값은 ✕ 뿐)
-    hl.exec_cmd("gsettings set org.gnome.desktop.wm.preferences button-layout appmenu:maximize,close")
+    -- GTK 앱이 직접 그리는 제목 표시줄은 ✕ 만: Hyprland가 최대화 상태를 앱에 알려주지 않아 앱의 □ 는 복원이 안 된다
+    hl.exec_cmd("gsettings set org.gnome.desktop.wm.preferences button-layout appmenu:close")
     hl.exec_cmd("wl-paste --watch cliphist store")
     -- USB 자동 마운트, 관리자 권한 비밀번호 창 (packages.extra; 설치돼 있을 때만)
     hl.exec_cmd("sh -c 'command -v udiskie >/dev/null && exec udiskie --no-tray'")
@@ -87,7 +87,7 @@ if hl.plugin.hyprbars then
     -- apps that draw their own buttons (Chromium's tab strip, Discord, VS Code, GTK4 apps, KakaoTalk) and dialogs keep
     -- only theirs. Chromium app windows (chrome-*, e.g. the Claude app) draw none, so they do get the bar.
     hl.window_rule({ name = "hyprbars-own-buttons", ["hyprbars:no_bar"] = true,
-        match = { class = "^(chromium|discord|code|code-oss|org\\.gnome\\.FileRoller|org\\.pulseaudio\\.pavucontrol|org\\.gnome\\.Evince|.*\\.exe)$" } })
+        match = { class = "^(discord|code|code-oss|org\\.gnome\\.FileRoller|org\\.pulseaudio\\.pavucontrol|org\\.gnome\\.Evince|.*\\.exe)$" } })
     hl.window_rule({ name = "hyprbars-no-settings", ["hyprbars:no_bar"] = true, match = { title = "^설정 · 싯딤의 상자$" } })
 end
 

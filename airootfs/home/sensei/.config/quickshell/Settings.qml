@@ -600,6 +600,15 @@ FloatingWindow {
                     Toggle { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; on: Arona.settings.sounds; onToggled: Arona.settings.sounds = !Arona.settings.sounds }
                 }
             }
+            Card {
+                Item {
+                    width: parent.width; height: 40 * win.s
+                    T { anchors.verticalCenter: parent.verticalCenter; text: "아로나 목소리"; font.pixelSize: 18 * win.s; font.weight: Font.Bold }
+                    Toggle { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; on: Arona.settings.voice; onToggled: Arona.settings.voice = !Arona.settings.voice }
+                }
+                Sub { text: "데스크탑의 음성 서버 주소. 서버가 꺼져 있으면 목소리만 조용히 안 나와요." }
+                Field { width: parent.width; placeholder: "http://192.168.0.10:9880/tts?text_lang=ko&ref_audio_path=…"; text: Arona.settings.voiceUrl; onTextChanged: Arona.settings.voiceUrl = text.trim() }
+            }
             Item {
                 width: parent.width; height: mixBtn.height
                 Sub { anchors.verticalCenter: parent.verticalCenter; text: "앱마다 음량을 따로 맞추려면 앱별 음량을 여세요." }

@@ -102,7 +102,11 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
 - 부팅 직후 바탕화면이 잠깐 보이던 것: 셸이 첫 시작 때 스스로 잠근다 (`Lock.qml`, `/run/user/1000/shittim-locked-once`).
 - 독: Steam 추가, 큰 버튼 = "업무 시작하기"(`shittim-work`, 블루 아카이브가 Steam에 설치돼 있을 때만 켜짐), 왼쪽에 아로나 검색.
 - 타자 소리: 셸의 글 입력 칸(대화, 검색, 설정, 잠금화면)에서 `Sfx.key()` → `assets/sfx/key.wav`. 다른 앱 안에서는 안 난다.
-- 크롬·GTK 앱 제목 표시줄에 □ 버튼: `gsettings ... button-layout appmenu:maximize,close` (hyprland.lua 시작 훅).
+- 크롬 제목 표시줄: 크롬도 hyprbars(□ ✕)를 쓴다. Hyprland는 최대화 상태를 앱에 알려주지 않아 앱이 직접 그린 □ 는 복원이 안 된다.
+  그래서 크롬 프로필 `Preferences`의 `browser.custom_chrome_frame=false`(= 설정 → 모양 → "시스템 제목 표시줄 및 테두리 사용")로
+  크롬 자체 버튼을 끄고 no_bar 규칙에서 chromium을 뺐다. **새 프로필·재설치 때는 이 크롬 설정을 다시 켜야 한다.** GTK 앱은 ✕ 만.
+- 목소리: 설정 → 소리 → 아로나 목소리(스위치 + 서버 주소). `Arona.speak()`가 주소에 `text=`를 붙여 GET, 받은 wav를 재생.
+  데스크탑의 음성 복제 서버(GPT-SoVITS api_v2 `/tts`)용. 서버가 꺼져 있으면 2초 뒤 조용히 포기 (알림 없음). 서버는 아직 없음.
 - Steam: 고장이 아니었다. 첫 실행 때 창 없이 몇 분간 약 700MB를 받는다 (`~/.local/share/Steam/logs/bootstrap_log.txt`).
 
 루트 필요 (apply-system.sh)
@@ -112,4 +116,4 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
 - 프라나 모션, 아로나 curious 표정: Spine 원본이 없어 못 만듦. `assets/plana/<표정>.webp`, `assets/arona/curious.webp`를
   넣으면 코드 수정 없이 나온다 (지금은 같은 캐릭터의 smile 모션으로 대체).
 - 블루투스(Britz BT4000 ANC) 연결 끊김: 헤드셋이 꺼져 있어 재현 못 함. 켠 상태에서 `journalctl -b -u bluetooth -f` 를 보며 다시 연결해 원인 확인.
-- 목소리 서버: 이 OS에는 음성 서버가 없다. 어떤 서버(ARONA 1.0의 TTS?)인지 확인 후 진행.
+- 목소리 서버: 노트북 쪽은 끝. 데스크탑에 GPT-SoVITS 서버를 세우고 주소를 설정에 넣어 실제 서버로 확인해야 한다.

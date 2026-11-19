@@ -181,10 +181,10 @@ PanelWindow {
             width: Math.min(implicitWidth, 320 * ln.s)
             wrapMode: Text.WordWrap
             color: Theme.ink; font.family: Theme.font; font.pixelSize: 20 * ln.s; lineHeight: 1.3
-            text: ln.mode === "ask" ? (Arona.replying ? "음… 잠깐만요!" : "선생님의 부탁이라면\n뭐든지 해 볼게요!")
-                : !ln.q ? "무엇을 찾아드릴까요, 선생님?"
-                : ln.found ? "'" + ln.q + "'로 찾은 게 " + ln.found + "개예요!"
-                : finder.running ? "찾고 있어요…" : "'" + ln.q + "'(으)로는 못 찾았어요…"
+            text: ln.mode === "ask" ? (Arona.replying ? Arona.v("음… 잠깐만요!", "…연산 중.") : Arona.v("선생님의 부탁이라면\n뭐든지 해 볼게요!", "지시를 입력해 주십시오.\n…수행하겠습니다."))
+                : !ln.q ? Arona.v("무엇을 찾아드릴까요, 선생님?", "검색 대상을 입력해 주십시오.")
+                : ln.found ? Arona.v("'" + ln.q + "'로 찾은 게 " + ln.found + "개예요!", "'" + ln.q + "' 검색 결과, " + ln.found + "건입니다.")
+                : finder.running ? Arona.v("찾고 있어요…", "…검색 중.") : Arona.v("'" + ln.q + "'(으)로는 못 찾았어요…", "'" + ln.q + "' 검색 결과, 없습니다.")
         }
     }
 
@@ -439,9 +439,9 @@ PanelWindow {
                                 width: Math.min(implicitWidth, 700 * ln.s)
                                 wrapMode: Text.WordWrap; textFormat: Text.PlainText
                                 text: Arona.replyError || Arona.replyText
-                                      || (Arona.replying ? "음… 생각하고 있어요…"
-                                         : Arona.ready ? "무엇이든 부탁해 주세요, 선생님!\n입력하고 Enter를 누르면 대답할게요."
-                                         : "먼저 설정 → 아로나에서\nGemini API 키를 넣어 주세요!")
+                                      || (Arona.replying ? Arona.v("음… 생각하고 있어요…", "…연산 중입니다.")
+                                         : Arona.ready ? Arona.v("무엇이든 부탁해 주세요, 선생님!\n입력하고 Enter를 누르면 대답할게요.", "지시를 입력하고 Enter를 눌러 주십시오.\n답변하겠습니다.")
+                                         : Arona.v("먼저 설정 → 아로나에서\nGemini API 키를 넣어 주세요!", "Gemini API 키가 필요합니다.\n설정 → 아로나에서 입력해 주십시오."))
                                 color: Theme.ink; font.family: Theme.font; font.pixelSize: 17 * ln.s; lineHeight: 1.35
                             }
                         }

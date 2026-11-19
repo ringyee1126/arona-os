@@ -8,13 +8,15 @@ Item {
     property string mood: "smile"     // smile | surprised | angry | happy | curious | thinking
     property string who: Arona.who    // arona | plana
     property int fallback: 0
+    // 프라나는 표정 파일 이름이 다르다 (assets/plana/ 에 23개: idle neutral calm serious sparkling displeased …)
+    readonly property var plana: ({ smile: "idle", angry: "displeased", curious: "sparkling", thinking: "serious" })
     onMoodChanged: fallback = 0
     onWhoChanged: fallback = 0
 
     AnimatedImage {
         id: anim
         anchors.fill: parent
-        source: Theme.assets + (sp.fallback < 2 ? sp.who : "arona") + "/" + (sp.fallback === 0 ? sp.mood : "smile") + ".webp"
+        source: Theme.assets + (sp.fallback < 2 ? sp.who : "arona") + "/" + (sp.fallback === 0 ? (sp.who === "plana" && sp.plana[sp.mood] || sp.mood) : sp.fallback === 1 && sp.who === "plana" ? "idle" : "smile") + ".webp"
         fillMode: Image.PreserveAspectFit
         cache: false                    // 100 large frames: decode as we go instead of keeping them all in memory
         playing: sp.visible

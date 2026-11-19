@@ -56,6 +56,7 @@ Scope {
                         MouseArea { id: xMa; anchors.fill: parent; hoverEnabled: true; onPressedChanged: if (pressed) Sfx.tap(); onClicked: cap.open = false }
                     }
                 }
+                Text { text: "녹화 끝내기: PrtSc 키. 전체 화면 녹화는 마우스를 화면 맨 위 가운데에 대면 조작 막대가 나와요."; width: grid.width; wrapMode: Text.WordWrap; color: Theme.inkDim; font.family: Theme.font; font.pixelSize: 14 * cap.s; font.weight: Font.Bold }
                 Grid {
                     id: grid
                     columns: 2; spacing: 12 * cap.s
@@ -90,8 +91,8 @@ Scope {
     // ---------- 녹화 중: 빨간 테두리 + 조작 막대 ----------
     // Hyprland에는 "화면에는 보이고 녹화에는 안 찍히는" 레이어가 없다 (no_screen_share 는 그 자리를 검게 칠한다).
     // 그래서 shittim-shot 이 화면 가장자리 4px 안쪽만 녹화하고, 테두리는 그 바깥 4px에 그린다 → 보이지만 안 찍힌다.
-    // 막대는 늘 보인다 (사용자 요청). 녹화 영역 위에 자리가 있으면 그 바깥에 놓여 안 찍히고, 전체 화면처럼 자리가
-    // 없으면 영역 안쪽 위에 놓여 영상에도 찍힌다.
+    // 조작 막대도 영상에 찍히면 안 된다 (사용자 요청): 녹화 영역 위나 아래에 자리가 있으면 그 바깥에 늘 보이고,
+    // 전체 화면처럼 자리가 없으면 숨어 있다가 마우스를 화면 맨 위 가운데에 대면 나온다 (그동안만 영상에 찍힌다).
     property rect frame: Qt.rect(4, 4, 100, 100)     // 녹화 영역 (shittim-shot 이 알려 준다)
     readonly property int t: 4                        // 테두리 두께 = 녹화 영역 바깥 여백
     IpcHandler {
@@ -110,8 +111,10 @@ Scope {
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
         mask: Region { item: hot }           // 막대(와 위쪽 테두리)만 눌리고 나머지는 아래 창으로
         readonly property color line: cap.state === "paused" ? "#F7C63C" : "#FF2D4A"
-        readonly property bool outside: cap.frame.y - cap.t >= pill.height + 12     // 영역 위에 막대 놓을 자리가 있다
-        readonly property bool shown: true
+        readonly property bool above: cap.frame.y - cap.t >= pill.height + 12       // 영역 위에 막대 놓을 자리가 있다
+        readonly property bool below: !above && cap.frame.y + cap.frame.height + cap.t + pill.height + 12 <= cap.screen.height
+        readonly property bool outside: above || below
+        readonly property bool shown: outside || hover.hovered || pillHover.hovered
         Rectangle {
             x: cap.frame.x - cap.t; y: cap.frame.y - cap.t; width: cap.frame.width + cap.t * 2; height: cap.frame.height + cap.t * 2
             color: "transparent"; border.width: cap.t; border.color: rec.line
@@ -120,16 +123,17 @@ Scope {
             id: hot      // 마우스를 받는 곳: 막대가 숨어 있을 때는 위쪽 테두리 가운데만
             x: pill.x; width: pill.width
             y: rec.outside ? pill.y : cap.frame.y - cap.t
-            height: rec.outside ? pill.height : rec.shown ? pill.height + 14 : cap.t + 2
-            MouseArea { id: hover; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
+            height: rec.outside ? pill.height : rec.shown ? pill.height + 14 : cap.t + 6
+            HoverHandler { id: hover }
         }
         Rectangle {
             id: pill
             visible: rec.shown
             x: Math.max(8, Math.min(parent.width - width - 8, cap.frame.x + (cap.frame.width - width) / 2))
-            y: rec.outside ? cap.frame.y - cap.t - height - 6 : cap.frame.y + 6
+            y: rec.above ? cap.frame.y - cap.t - height - 6 : rec.below ? cap.frame.y + cap.frame.height + cap.t + 6 : cap.frame.y + 6
             width: bar.width + 36 * cap.s; height: 52 * cap.s; radius: height / 2
             color: "#F21E3A52"; border.width: 2 * cap.s; border.color: rec.line
+            HoverHandler { id: pillHover }      // 막대 위에서는 아래 hot 의 hover 가 끊긴다: 버튼으로 가는 동안 숨지 않게
             Row {
                 id: bar
                 anchors.centerIn: parent; spacing: 14 * cap.s

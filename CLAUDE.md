@@ -144,6 +144,15 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
 - Steam·gamemode 등 패키지, 부팅·종료 컷씬(4.5초 시간 기반 진행 막대, 끝까지 재생, GRUB 메뉴 숨김 - Esc로 표시).
 
 남은 것
-- 프라나 모션, 아로나 curious 표정: Spine 원본이 없어 못 만듦. `assets/plana/<표정>.webp`, `assets/arona/curious.webp`를
-  넣으면 코드 수정 없이 나온다 (지금은 같은 캐릭터의 smile 모션으로 대체).
+- 아로나 curious 표정: Spine 원본이 없어 못 만듦. `assets/arona/curious.webp`를 넣으면 코드 수정 없이 나온다 (지금은 smile로 대체).
+
+## 프라나 (2026-11-19)
+- 모션: 사용자가 준 `expressions.zip`(720x1280 투명 VP9 webm 23개, 30fps 200프레임)을 `assets/plana/<표정>.webp`(640x1300, 발 위치를 아로나에 맞춤)로 변환.
+  `ffmpeg -c:v libvpx-vp9 -i X.webm -vf "crop=640:1280:39:0,pad=640:1300:0:13:color=0x00000000" -c:v libwebp_anim -quality 75 -loop 0 X.webp`
+  (`-c:v libvpx-vp9` 를 입력 앞에 꼭 줄 것: 기본 vp9 디코더는 투명도를 버린다.)
+- 표정 연결(`AronaSprite.qml`의 `plana` 표): smile→idle, angry→displeased, curious→sparkling, thinking→serious, happy·surprised는 같은 이름.
+  나머지 17개(neutral calm downcast blushing dizzy …)는 파일만 있고 아직 어떤 상황에도 연결하지 않았다.
+- 대사: `Arona.qml`의 `aronaLines` / `planaLines` (같은 키 63개), `Arona.lines`가 지금 캐릭터의 표. 표 밖의 문장은 `Arona.v(아로나, 프라나)`.
+- 교체: 설정 → 아로나 → 성격 저장 → `Arona.switching` 2초 동안 `Loading.qml`(Plymouth 테마 그림 재사용)이 덮고 1초째에 `Arona.who`가 바뀐다.
+  끝나면 `hello` 대사. 대화 기록은 교체 때 비운다.
 - 블루투스(Britz BT4000 ANC) 연결 끊김: 헤드셋이 꺼져 있어 재현 못 함. 켠 상태에서 `journalctl -b -u bluetooth -f` 를 보며 다시 연결해 원인 확인.

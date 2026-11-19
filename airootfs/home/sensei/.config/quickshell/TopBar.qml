@@ -50,7 +50,7 @@ PanelWindow {
                 x: 38 * bar.s; anchors.verticalCenter: parent.verticalCenter
                 spacing: 3 * bar.s
                 Text { text: "선생님"; color: Theme.ink; font.family: Theme.font; font.pixelSize: 24 * bar.s; font.weight: Font.Black }
-                Text { text: "싯딤의 상자 · 아로나 대기 중"; color: Theme.inkDim; font.family: Theme.font; font.pixelSize: 15 * bar.s; font.weight: Font.DemiBold }
+                Text { text: "싯딤의 상자 · " + Arona.name + " 대기 중"; color: Theme.inkDim; font.family: Theme.font; font.pixelSize: 15 * bar.s; font.weight: Font.DemiBold }
                 Rectangle {
                     width: 230 * bar.s; height: 8 * bar.s; radius: 4 * bar.s; color: "#DCE8F0"
                     Rectangle { width: parent.width * bar.dayProgress; height: parent.height; radius: parent.radius; color: Theme.sky }

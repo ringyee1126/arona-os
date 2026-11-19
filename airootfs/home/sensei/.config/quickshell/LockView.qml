@@ -227,7 +227,7 @@ Item {
         }
         Row {
             x: 160 * v.s; y: 66 * v.s; spacing: 16 * v.s
-            Text { id: speaker; text: "아로나"; color: "white"; font.family: Theme.font; font.pixelSize: 38 * v.s; font.weight: Font.ExtraBold }
+            Text { id: speaker; text: Arona.name; color: "white"; font.family: Theme.font; font.pixelSize: 38 * v.s; font.weight: Font.ExtraBold }
             Text { anchors.baseline: speaker.baseline; text: "싯딤의 상자"; color: "#6FC8F2"; font.family: Theme.font; font.pixelSize: 24 * v.s; font.weight: Font.Bold }
         }
         Rectangle {

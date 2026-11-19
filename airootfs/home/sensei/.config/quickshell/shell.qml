@@ -38,6 +38,7 @@ ShellRoot {
         target: Arona
         function onReplyTextChanged() { if (Arona.replyText) Sfx.play("receive") }
         function onReplyErrorChanged() { if (Arona.replyError) Sfx.play("error") }
+        function onSwitchingChanged() { if (!Arona.switching) Arona.react("hello") }   // 교체가 끝나면 새 캐릭터가 인사
     }
     IpcHandler {
         target: "chat"
@@ -82,6 +83,7 @@ ShellRoot {
             Desktop { screen: scope.modelData }
             TopBar { screen: scope.modelData }
             Dock { screen: scope.modelData }
+            Loading { screen: scope.modelData }
         }
     }
 }

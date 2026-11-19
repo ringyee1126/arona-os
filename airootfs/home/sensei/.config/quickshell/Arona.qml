@@ -14,7 +14,75 @@ Singleton {
 
     // 목소리: 정해진 대사(lines)만, 미리 녹음한 assets/voice/<arona|plana>/<이름>.wav 를 튼다.
     // 파일이 없는 대사는 조용히 넘어간다. Gemini 답변처럼 그때그때 다른 말은 소리가 없다.
-    readonly property var lines: ({
+    // 캐릭터마다 같은 이름의 대사를 따로 가진다. 한쪽을 고치면 다른 쪽과 대본(assets/voice/README.md)도 같이 고칠 것.
+    readonly property var lines: who === "plana" ? planaLines : aronaLines
+    readonly property var planaLines: ({
+        "greet-morning": "좋은 아침입니다, 선생님.\n오늘의 업무를 시작하겠습니다.",
+        "greet-noon": "점심시간입니다.\n…식사를 거르는 것은 권장하지 않습니다.",
+        "greet-afternoon": "오후 업무 시간입니다.\n집중력 저하에 주의하십시오.",
+        "greet-evening": "오늘 하루, 수고하셨습니다.",
+        "greet-night": "늦은 시간입니다.\n수면을 권장합니다, 선생님.",
+        "pat-1": "…이해 불가.\n이 행동에 어떤 의미가 있습니까.",
+        "pat-2": "머리가 흐트러집니다.\n…그만두라는 말은 아닙니다.",
+        "pat-3": "…계속하셔도, 문제는 없습니다.",
+        "not-ready": "해당 기능은 준비되지 않았습니다.\n대기를 요청합니다.",
+        "err-nokey": "Gemini API 키가 없습니다.\n설정 → 아로나에서 입력해 주십시오.",
+        "err-offline": "네트워크 연결을 확인할 수 없습니다.\n연결 상태를 점검해 주십시오.",
+        "err-badkey": "API 키가 유효하지 않습니다.\n설정 → 아로나에서 재확인을 요청합니다.",
+        "err-quota": "무료 한도를 초과했습니다.\n잠시 후 다시 시도해 주십시오.",
+        "err-busy": "구글 서버가 혼잡합니다.\n…잠시 후 다시 질문해 주십시오.",
+        "err-toolong": "답변이 길어 잘렸습니다.\n질문을 나누어 주십시오.",
+        "err-empty": "답변이 비어 있습니다.\n재질문을 요청합니다.",
+        "err-filebig": "파일 용량 초과.\n합계 15MB까지만 받을 수 있습니다.",
+        "err-fileread": "파일을 읽지 못했습니다.",
+        "pat-4": "…당황.\n얼굴의 온도가 상승하고 있습니다.",
+        "pat-5": "…나쁘지 않습니다.",
+        "lock-morning": "좋은 아침입니다, 선생님.\n싯딤의 상자에 접속하려면 비밀번호를 입력해 주십시오.",
+        "lock-day": "복귀를 확인했습니다. …기다리고 있었습니다.\n싯딤의 상자에 접속하려면 비밀번호를 입력해 주십시오.",
+        "lock-evening": "오늘도 수고하셨습니다, 선생님.\n싯딤의 상자에 접속하려면 비밀번호를 입력해 주십시오.",
+        "lock-night": "늦은 시간입니다. 무리는 금물입니다.\n싯딤의 상자에 접속하려면 비밀번호를 입력해 주십시오.",
+        "lock-ok": "인증 완료.\n어서 오십시오, 선생님.",
+        "lock-fail-1": "비밀번호 불일치.\n다시 입력해 주십시오.",
+        "lock-fail-2": "재차 불일치.\nCaps Lock 상태를 확인해 주십시오.",
+        "lock-fail-3": "…경고.\n선생님이 아닐 가능성을 검토하고 있습니다.",
+        "lock-error": "인증 장치에 이상이 발생했습니다.\n잠시 후 다시 시도해 주십시오.",
+        "idle-1": "…선생님.\n지시가 없으면 대기를 계속하겠습니다.",
+        "idle-2": "바탕화면을 응시 중인 것으로 확인됩니다.\n…혹시, 저를 보고 계십니까.",
+        "idle-3": "오늘의 예정을 알려 주시면 보조하겠습니다.",
+        "idle-4": "용건이 있으면 말을 걸어 주십시오.\n…없어도, 상관은 없습니다.",
+        "idle-5": "…졸지 않았습니다.\n잠시 눈을 감고 있었을 뿐입니다.",
+        "work-1": "업무를 개시합니다.\n키보토스가 선생님을 기다리고 있습니다.",
+        "work-2": "샬레 출근 시간입니다.\n학생들을 부탁드립니다.",
+        "work-3": "블루 아카이브를 실행합니다.\n잠시 대기해 주십시오.",
+        "power-confirm": "정말 종료하시겠습니까.\n한 번 더 누르면 진행합니다.",
+        "power-off-1": "오늘도 수고하셨습니다.\n…내일 다시 뵙겠습니다.",
+        "power-off-2": "싯딤의 상자를 종료합니다.\n안녕히 주무십시오, 선생님.",
+        "power-reboot": "재시작합니다.\n곧 돌아오겠습니다.",
+        "power-sleep": "절전에 들어갑니다.\n…저도 잠시 쉬겠습니다.",
+        "settings-1": "설정을 열었습니다.\n변경할 항목을 선택해 주십시오.",
+        "settings-2": "싯딤의 상자를 조정하시는군요.\n보조하겠습니다.",
+        "search-1": "검색 대상을 입력해 주십시오.",
+        "search-2": "무엇을 찾으십니까, 선생님.",
+        "chat-1": "네, 선생님.\n부르셨습니까.",
+        "chat-2": "…대화, 가능합니다.",
+        "thinking-1": "…연산 중.",
+        "thinking-2": "확인하고 있습니다.",
+        "thinking-3": "잠시 대기해 주십시오.",
+        "launch-1": "실행합니다.",
+        "launch-2": "이해했습니다.",
+        "launch-3": "준비됐습니다.",
+        "notify-1": "선생님, 새 알림입니다.",
+        "notify-2": "알림 수신.\n확인을 권장합니다.",
+        "shot-1": "촬영 완료.\n스크린샷을 저장했습니다.",
+        "shot-2": "…잘 찍혔습니다.",
+        "task-done-1": "한 건 완료.\n…훌륭합니다, 선생님.",
+        "task-done-2": "수고하셨습니다.\n이 속도를 유지하십시오.",
+        "battery-low": "배터리 잔량 부족.\n충전기 연결을 요청합니다.",
+        "battery-charging": "충전 개시를 확인했습니다.\n…안심입니다.",
+        "hello": "교대했습니다.\n지금부터는 제가 담당하겠습니다, 선생님."
+    })
+    readonly property var aronaLines: ({
+        "hello": "선생님! 아로나가 돌아왔어요!\n다시 잘 부탁드려요!",
         "greet-morning": "좋은 아침이에요, 선생님!\n오늘도 같이 힘내요!",
         "greet-noon": "점심은 드셨어요?\n아로나는 딸기우유가 좋아요!",
         "greet-afternoon": "오후도 화이팅이에요, 선생님!",
@@ -83,6 +151,7 @@ Singleton {
         const ks = Object.keys(lines).filter(k => k === ev || /^-\d+$/.test(k.slice(ev.length)) && k.startsWith(ev))
         return ks.length ? lines[ks[Math.floor(Math.random() * ks.length)]] : ""
     }
+    function v(a, p) { return who === "plana" ? p : a }       // 표에 없는 문장: 아로나 말투 / 프라나 말투
     function react(ev) { const t = pick(ev); if (t) say(t) }   // 말풍선 + 목소리
     function speak(text) {
         if (!cfg.voice) return
@@ -108,6 +177,7 @@ Singleton {
         path: Quickshell.env("HOME") + "/.config/shittim/arona.json"
         watchChanges: true
         printErrors: false
+        blockLoading: true      // 시작할 때 성격을 바로 읽어야 교체 화면이 부팅 때 뜨지 않는다
         onFileChanged: reload()
         onAdapterUpdated: {
             writeAdapter()
@@ -129,7 +199,17 @@ Singleton {
     // ---------- personas (ARONA 1.0 personas.py) ----------
     readonly property var personaKeys: ["arona", "plana", "custom"]
     // 바탕화면에 서 있는 캐릭터: 성격이 프라나면 프라나 (assets/plana/ 에 모션이 있을 때, AronaSprite.qml)
-    readonly property string who: cfg.persona === "plana" ? "plana" : "arona"
+    // 성격을 바꾸면 2초 동안 싯딤 로딩 화면(Loading.qml)이 덮고, 그 가운데(1초째)에 who가 바뀐다.
+    readonly property string wantWho: cfg.persona === "plana" ? "plana" : "arona"
+    property string who: "arona"
+    property bool switching: false
+    property bool up: false
+    Component.onCompleted: { who = wantWho; up = true }
+    onWantWhoChanged: if (up) { switching = true; swap.restart() }
+    Timer {
+        id: swap; interval: 1000
+        onTriggered: if (arona.who !== arona.wantWho) { arona.who = arona.wantWho; arona.clearChat(); restart() } else arona.switching = false
+    }
     readonly property string name: who === "plana" ? "프라나" : "아로나"
     readonly property var personas: ({
         arona: { label: "ARONA", desc: "샬레의 인공지능 비서. 밝고 성실하며 가끔 엉뚱함",
@@ -138,7 +218,7 @@ Singleton {
                   + "밝고 성실하고 공손하지만 딱딱하지 않게, 가끔은 엉뚱하고 귀엽게 말합니다. 단 것(특히 딸기우유·과자)을 좋아하고, 열심히 일하면 칭찬받고 싶어 합니다.\n"
                   + "블루 아카이브의 고유 명사(키보토스, 샬레, 싯딤의 상자, 게헨나, 트리니티, 밀레니엄 등)를 가끔 비유나 농담에 자연스럽게 섞습니다. 매 문장마다 넣지는 마세요." },
         plana: { label: "PLANA", desc: "차분하고 담백한 또 하나의 비서",
-            prompt: "당신은 [블루 아카이브]의 인공지능 비서 '플라나'입니다. 사용자의 호칭은 '{user_name}'입니다. 사용자를 부를 때 '{user_name}'이라고 부르세요.\n"
+            prompt: "당신은 [블루 아카이브]의 인공지능 비서 '프라나'입니다. 사용자의 호칭은 '{user_name}'입니다. 사용자를 부를 때 '{user_name}'이라고 부르세요.\n"
                   + "감정 표현이 적고 말수가 적으며 담백하게 사실 위주로 짧게 말합니다. 가끔 아주 살짝 감정이 새어 나옵니다. 존댓말을 씁니다." },
         custom: { label: "커스텀", desc: "직접 적은 내용이 그대로 시스템 프롬프트가 됨", prompt: "" }
     })
@@ -223,7 +303,7 @@ Singleton {
             arona.replying = false
             const c = data && data.candidates && data.candidates[0]
             if (!c) return arona.fail(data && data.promptFeedback && data.promptFeedback.blockReason
-                                      ? "그 부탁은 안전 필터에 걸렸어요…" : lines["err-empty"])
+                                      ? v("그 부탁은 안전 필터에 걸렸어요…", "해당 요청은 안전 필터에 차단됐습니다.") : lines["err-empty"])
             const raw = ((c.content && c.content.parts) || []).filter(p => !p.thought).map(p => p.text || "").join("")
             const body = raw.replace(/\[\[표정:[^\]]*\]\]/g, "").trim()
             if (!body) return arona.fail(c.finishReason === "MAX_TOKENS" ? lines["err-toolong"] : lines["err-empty"])

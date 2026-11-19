@@ -22,7 +22,7 @@ PanelWindow {
     readonly property string me: Arona.settings.userName.trim() || "선생님"
     property string pending: ""          // sent, but not in Arona.history yet (waiting, or it failed)
     readonly property var msgs: {
-        const m = [{ me: false, text: "어서 오세요, " + me + "! 오늘은 무엇을 도와드릴까요?" }]
+        const m = [{ me: false, text: Arona.v("어서 오세요, " + me + "! 오늘은 무엇을 도와드릴까요?", me + ". 용건을 말씀해 주십시오.") }]
         for (const h of Arona.history)
             m.push({ me: h.role === "user", text: h.role === "user" ? h.text : h.text.replace(/\[\[표정:[^\]]*\]\]/g, "").trim() })
         if (pending) m.push({ me: true, text: pending })
@@ -51,7 +51,7 @@ PanelWindow {
                 for (const line of text.split("\n").filter(l => l)) {
                     const f = line.split("\t"), mime = chat.geminiMime(f[0])
                     total += parseInt(f[1]) || 0
-                    if (!mime) return Arona.fail("'" + f[2] + "' 같은 형식은 아직 읽지 못해요.\n사진 · PDF · 글 · 소리 · 영상 파일을 주세요.")
+                    if (!mime) return Arona.fail(Arona.v("'" + f[2] + "' 같은 형식은 아직 읽지 못해요.\n사진 · PDF · 글 · 소리 · 영상 파일을 주세요.", "'" + f[2] + "' 형식은 읽을 수 없습니다.\n사진 · PDF · 글 · 소리 · 영상 파일을 요청합니다."))
                     if (!f[3] || total > 15000000) return Arona.fail(Arona.lines["err-filebig"])
                     parts.push({ inlineData: { mimeType: mime, data: f[3] } })
                 }

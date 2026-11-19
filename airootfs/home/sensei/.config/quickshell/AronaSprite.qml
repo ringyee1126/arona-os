@@ -18,7 +18,7 @@ Item {
         anchors.fill: parent
         source: Theme.assets + (sp.fallback < 2 ? sp.who : "arona") + "/" + (sp.fallback === 0 ? (sp.who === "plana" && sp.plana[sp.mood] || sp.mood) : sp.fallback === 1 && sp.who === "plana" ? "idle" : "smile") + ".webp"
         fillMode: Image.PreserveAspectFit
-        cache: false                    // 100 large frames: decode as we go instead of keeping them all in memory
+        cache: false                    // ~100 large frames: decode as we go instead of keeping them all in memory
         playing: sp.visible
         smooth: true
         onStatusChanged: if (status === AnimatedImage.Error && sp.fallback < 2) sp.fallback++

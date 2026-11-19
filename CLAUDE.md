@@ -150,6 +150,8 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
 - 모션: 사용자가 준 `expressions.zip`(720x1280 투명 VP9 webm 23개, 30fps 200프레임)을 `assets/plana/<표정>.webp`(640x1300, 발 위치를 아로나에 맞춤)로 변환.
   `ffmpeg -c:v libvpx-vp9 -i X.webm -vf "crop=640:1280:39:0,pad=640:1300:0:13:color=0x00000000" -c:v libwebp_anim -quality 75 -loop 0 X.webp`
   (`-c:v libvpx-vp9` 를 입력 앞에 꼭 줄 것: 기본 vp9 디코더는 투명도를 버린다.)
+  **한 바퀴만 잘라 쓴다 (`-frames:v N` 추가)**: 원본은 200프레임이지만 동작 한 바퀴는 Idle = 109프레임, 나머지 표정 = 100프레임이다.
+  Idle을 200프레임 그대로 돌리면 1.83바퀴에서 끊겨 처음으로 돌아갈 때 튄다. 새 표정을 변환할 때는 첫 프레임과 가장 닮은 프레임 번호를 N으로.
 - 표정 연결(`AronaSprite.qml`의 `plana` 표): smile→idle, angry→displeased, curious→sparkling, thinking→serious, happy·surprised는 같은 이름.
   쓰지 않는 나머지 17개는 지웠다 (사용자 결정). 다시 필요하면 원본 zip에서 위 명령으로 변환한다.
 - 대사: `Arona.qml`의 `aronaLines` / `planaLines` (같은 키 63개), `Arona.lines`가 지금 캐릭터의 표. 표 밖의 문장은 `Arona.v(아로나, 프라나)`.

@@ -125,6 +125,24 @@ local function half(right)
         hl.dispatch(hl.dsp.window.move({ x = right and (x + hw + g) or x, y = y }))
     end
 end
+-- 창을 끌다가 마우스가 화면 가장자리에 닿은 채로 놓으면: 왼쪽/오른쪽 = 반쪽, 위 = 최대화 (Windows의 스냅).
+-- 끌기가 끝났다는 신호가 따로 없어서, 왼쪽 버튼을 누를 때 창 위치를 적어 두고 뗄 때 위치가 달라졌으면 끈 것으로 본다.
+local press = nil
+hl.bind("mouse:272", function()
+    local w = hl.get_active_window()
+    press = w and { address = w.address, x = w.at.x or w.at[1], y = w.at.y or w.at[2] } or nil
+end, { non_consuming = true })
+hl.bind("mouse:272", function()
+    local p, w, c, m = press, hl.get_active_window(), hl.get_cursor_pos(), hl.get_monitor_at_cursor()
+    press = nil
+    if not (p and w and c and m) or w.address ~= p.address or not w.floating then return end
+    if (w.at.x or w.at[1]) == p.x and (w.at.y or w.at[2]) == p.y then return end        -- 그냥 클릭
+    if c.x <= m.x + 1 then half(false)()
+    elseif c.x >= m.x + m.width - 2 then half(true)()
+    elseif c.y <= m.y + 1 and (w.fullscreen or 0) == 0 then
+        hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }))
+    end
+end, { release = true, non_consuming = true })
 hl.bind(mod .. " + left",  half(false))
 hl.bind(mod .. " + right", half(true))
 hl.bind(mod .. " + up", hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }))
@@ -145,6 +163,7 @@ function shittim_switcher(dir)   -- 전역: hyprctl로 시험할 수 있게
 end
 hl.bind("ALT + Tab", shittim_switcher("next"), { repeating = true })
 hl.bind("ALT + SHIFT + Tab", shittim_switcher("prev"), { repeating = true })
+hl.bind("ALT + Escape", hl.dsp.exec_cmd("quickshell ipc call switcher cancel"))   -- 목록 취소
 -- Wine/Proton이 띄우는 빈 "시스템 트레이" 창(explorer.exe, 160x20; 카카오톡·블루 아카이브를 켤 때)을 안 보이는 곳으로
 hl.window_rule({ name = "wine-tray", match = { class = "^explorer\\.exe$", title = "^$" },
                  workspace = "special:winetray silent", no_focus = true, no_initial_focus = true })

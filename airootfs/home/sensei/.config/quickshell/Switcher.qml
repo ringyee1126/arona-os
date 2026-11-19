@@ -22,7 +22,6 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "shittim-switcher"
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-    mask: Region {}                // 마우스는 그대로 아래 창으로
 
     function step(d) {
         if (open) { idx = (idx + d + wins.length) % wins.length; return }
@@ -66,8 +65,10 @@ PanelWindow {
         function next(): void { sw.step(1) }
         function prev(): void { sw.step(-1) }
         function commit(): void { sw.commit() }
+        function cancel(): void { sw.open = false; sw.wantCommit = false; sw.steps = 0 }   // Alt+Esc (hyprland.lua)
     }
 
+    MouseArea { anchors.fill: parent; onClicked: sw.open = false }   // 목록 밖을 누르면 취소
     Rectangle {
         anchors.centerIn: parent
         width: row.width + 48 * sw.s; height: row.height + 48 * sw.s
@@ -83,7 +84,8 @@ PanelWindow {
                     required property int index
                     readonly property bool sel: index === sw.idx
                     width: 220 * sw.s; height: 190 * sw.s; radius: 14 * sw.s
-                    color: sel ? Theme.sky : "#33FFFFFF"
+                    color: sel ? Theme.sky : tMa.containsMouse ? "#66FFFFFF" : "#33FFFFFF"
+                    MouseArea { id: tMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { sw.idx = tile.index; sw.commit() } }
                     border.width: sel ? 3 * sw.s : 0; border.color: "white"
                     Rectangle {
                         x: 10 * sw.s; y: 10 * sw.s; width: parent.width - 20 * sw.s; height: 124 * sw.s

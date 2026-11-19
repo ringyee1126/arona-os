@@ -1,9 +1,17 @@
 #!/usr/bin/env bash
-# 스크린샷·화면 녹화.  shittim-shot [menu|region|full|rec <full|region> <audio|mute>|stop]
-#   menu (PrtSc): 고르는 목록. 녹화 중이면 목록 대신 녹화를 끝낸다.
+# 스크린샷·화면 녹화.  shittim-shot [menu|region|full|rec <full|region> <audio|mute>|pause|stop]
+#   menu (PrtSc): 고르는 창(Capture.qml). 녹화 중이면 메뉴 대신 녹화를 끝낸다.
 #   스크린샷 → ~/사진/스크린샷 + 클립보드,  녹화 → ~/비디오/화면 녹화 (mp4, wf-recorder)
+#   pause: 일시정지/계속. wf-recorder에는 일시정지가 없어서 조각으로 나눠 찍고 끝날 때 ffmpeg로 이어 붙인다.
+D=${XDG_RUNTIME_DIR:-/tmp}/shittim-rec          # 녹화 중일 때만 있는 폴더: seg-N.mp4, paused, stop
 say() { notify-send -a 아로나 "$@"; }
-stop() { pkill -INT -x wf-recorder; }
+ui() { quickshell ipc call capture state "$1" >/dev/null 2>&1; }
+recording() { [[ -d $D ]]; }
+stop() { recording || return 0; touch "$D/stop"; rm -f "$D/paused"; pkill -INT -x wf-recorder; }
+pause() {
+  recording || return 0
+  if [[ -e $D/paused ]]; then rm -f "$D/paused"; else touch "$D/paused"; pkill -INT -x wf-recorder; fi
+}
 shot() {
   dir="$(xdg-user-dir PICTURES)/스크린샷"; mkdir -p "$dir"
   f="$dir/$(date +%Y-%m-%d_%H-%M-%S).png"
@@ -14,26 +22,40 @@ shot() {
   say -i "$f" "스크린샷 저장" "${f/#$HOME/\~}"
 }
 rec() {   # rec <full|region> <audio|mute>
-  pgrep -x wf-recorder >/dev/null && { stop; exit 0; }
-  dir="$(xdg-user-dir VIDEOS)/화면 녹화"; mkdir -p "$dir"
-  f="$dir/$(date +%Y-%m-%d_%H-%M-%S).mp4"; args=(-f "$f")
-  if [[ $1 == region ]]; then g=$(slurp) || exit 0; args+=(-g "$g"); fi
+  recording && { stop; exit 0; }
+  # 전체 화면도 가장자리 4px 안쪽만 찍는다: 그 4px에 "녹화 중" 빨간 테두리를 그려도 녹화에는 안 들어간다 (Capture.qml)
+  if [[ $1 == region ]]; then g=$(slurp) || exit 0
+  else g=$(hyprctl monitors -j | python3 -c 'import json,sys
+m=[m for m in json.load(sys.stdin) if m["focused"]][0]; s=m["scale"]
+print("%d,%d %dx%d" % (m["x"]+4, m["y"]+4, int(m["width"]/s)//2*2-8, int(m["height"]/s)//2*2-8))') || exit 1; fi
+  args=(-g "$g")
+  read -r gx gy gw gh <<< "${g//[,x]/ }"; quickshell ipc call capframe set "$gx" "$gy" "$gw" "$gh" >/dev/null 2>&1
   # 컴퓨터에서 나는 소리 = 기본 출력 장치의 모니터 (마이크가 아님)
   [[ $2 == audio ]] && args+=(--audio="$(pactl get-default-sink).monitor")
-  say -t 2500 "화면 녹화 시작" "PrtSc를 다시 누르면 끝나요."
-  if wf-recorder "${args[@]}" >/dev/null 2>&1 && [[ -s $f ]]; then say "화면 녹화 저장" "${f/#$HOME/\~}"
-  else say "화면 녹화" "녹화하지 못했어요."; exit 1; fi
+  dir="$(xdg-user-dir VIDEOS)/화면 녹화"; mkdir -p "$dir" "$D" || exit 1
+  f="$dir/$(date +%Y-%m-%d_%H-%M-%S).mp4"; n=0
+  trap 'rm -rf "$D"; ui off' EXIT
+  while :; do
+    n=$((n + 1)); ui rec
+    wf-recorder "${args[@]}" -f "$D/seg-$n.mp4" >/dev/null 2>&1
+    [[ -e $D/paused && ! -e $D/stop ]] || break
+    ui paused
+    while [[ -e $D/paused && ! -e $D/stop ]]; do sleep 0.2; done
+    [[ -e $D/stop ]] && break
+  done
+  ui off
+  segs=(); for s in "$D"/seg-*.mp4; do [[ -s $s ]] && segs+=("$s"); done
+  if (( ${#segs[@]} == 1 )); then mv "${segs[0]}" "$f"
+  elif (( ${#segs[@]} > 1 )); then
+    for i in $(seq 1 $n); do [[ -s $D/seg-$i.mp4 ]] && echo "file '$D/seg-$i.mp4'"; done > "$D/list"
+    ffmpeg -v error -f concat -safe 0 -i "$D/list" -c copy "$f"
+  fi
+  if [[ -s $f ]]; then say "화면 녹화 저장" "${f/#$HOME/\~}"; else say "화면 녹화" "녹화하지 못했어요."; exit 1; fi
 }
 case ${1:-menu} in
   region|full) shot "$1" ;;
   rec) rec "${2:-full}" "${3:-audio}" ;;
+  pause) pause ;;
   stop) stop ;;
-  menu)
-    pgrep -x wf-recorder >/dev/null && { stop; exit 0; }
-    case $(printf '%s\n' "사진: 영역 선택" "사진: 전체 화면" "녹화: 전체 화면 + 컴퓨터 소리" "녹화: 전체 화면 (소리 없이)" \
-                         "녹화: 영역 선택 + 컴퓨터 소리" "녹화: 영역 선택 (소리 없이)" | fuzzel --dmenu --lines 6 --width 34 --prompt "캡처  ") in
-      "사진: 영역"*) shot region ;;  "사진: 전체"*) shot full ;;
-      "녹화: 전체 화면 +"*) rec full audio ;;  "녹화: 전체 화면 ("*) rec full mute ;;
-      "녹화: 영역 선택 +"*) rec region audio ;; "녹화: 영역 선택 ("*) rec region mute ;;
-    esac ;;
+  menu) if recording; then stop; else quickshell ipc call capture open; fi ;;
 esac

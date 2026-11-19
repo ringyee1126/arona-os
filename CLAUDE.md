@@ -112,8 +112,14 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
   잠금화면, 쓰다듬기, 방치(창 없이 5분), 업무 시작(3초 뒤 실행), 전원(4초 뒤 실행), 설정·검색·대화 열기, 앱 실행, 알림, 스크린샷,
   할 일 완료, 배터리. 다른 프로세스에서는 `quickshell ipc call arona react <상황>`. **`lines`를 고치면 대본(README)도 고칠 것.**
 - Steam: 고장이 아니었다. 첫 실행 때 창 없이 몇 분간 약 700MB를 받는다 (`~/.local/share/Steam/logs/bootstrap_log.txt`).
-- 화면 녹화: PrtSc = `shittim-shot menu` (fuzzel 목록: 사진 영역/전체, 녹화 전체/영역 × 컴퓨터 소리 포함/없이). 녹화 중 PrtSc = 녹화 끝.
-  wf-recorder → `~/비디오/화면 녹화/*.mp4`. 소리는 기본 출력 장치의 모니터(`pactl get-default-sink`.monitor)를 녹음한다.
+- 캡처: PrtSc = `shittim-shot menu` → `Capture.qml` 메뉴(사진 영역/전체, 녹화 전체/영역 × 컴퓨터 소리 포함/없이, ✕·Esc로 닫기).
+  녹화 중 PrtSc = 녹화 끝. wf-recorder → `~/비디오/화면 녹화/*.mp4`, 소리는 기본 출력 장치의 모니터.
+  일시정지(`shittim-shot pause`)는 wf-recorder에 없어서 조각(`$XDG_RUNTIME_DIR/shittim-rec/seg-N.mp4`)으로 찍고 끝에 ffmpeg concat.
+  녹화 중 표시: Hyprland의 `no_screen_share` 레이어 규칙은 그 자리를 **검게 칠해서** 못 쓴다. 대신 전체 화면도 가장자리 4px 안쪽만
+  녹화하고(1912x1072) 빨간 테두리를 그 바깥에 그린다. 조작 막대는 영역 위에 자리가 있으면 바깥에 늘 보이고, 전체 화면이면
+  마우스를 위쪽 테두리에 댈 때만 내려온다(그동안은 찍힌다).
+- 창 스냅: 창을 끌다 마우스를 화면 왼쪽/오른쪽 끝에서 놓으면 반쪽, 위쪽 끝이면 최대화 (hyprland.lua, `mouse:272` 누름/뗌
+  non_consuming 단축키로 "창 위치가 바뀐 채 가장자리에서 뗐다"를 판단. 끌기 종료 이벤트가 없다).
 - **내장 스피커가 안 잡힌다 (2026-11-19)**: PipeWire에 "Dummy Output"만 있다. 스피커 칩은 SoundWire의 Realtek RT722
   (ACPI `\_SB.PCI0.GPPA.ACP.SDWC.SW21`, _ADR 0x000030025d072201, 커널 표 `acp70_rt722_only`에 있음). 그런데 BIOS에
   `acp-audio-config-flag`가 없어 `snd_amd_acp_find_config()`가 "마이크 전용"을 돌려주고 snd_pci_ps(SoundWire) 대신 snd_acp_pci가 붙는다.
@@ -122,7 +128,7 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
   빌드까지는 확인했고 **재부팅 후 실제로 소리가 나는지는 미확인.** 되돌리기: updates의 그 파일을 지우고 `depmod -a`.
 - 카카오톡: 창을 옮길 수 있게 Wine 창(`*.exe`)도 hyprbars 제목 표시줄을 쓴다. Wine 트레이 창(explorer.exe 160x20)은
   레지스트리 `HKCU\Software\Wine\X11 Driver\ShowSystray=N` 으로 껐다 (기존 프리픽스에 적용함, 새 설치는 kakaotalk 스크립트).
-- Alt+Tab: `Switcher.qml` 창 목록(미리보기, 최근 사용 순). Alt+Tab/Alt+Shift+Tab = `ipc call switcher next/prev`.
+- Alt+Tab: `Switcher.qml` 창 목록(미리보기, 최근 사용 순). Alt+Tab/Alt+Shift+Tab = `ipc call switcher next/prev`, 마우스로 고르기, Alt+Esc·바깥 클릭 = 취소.
   Alt를 뗀 것은 hyprland.lua의 타이머(`hl.is_key_down("Alt_L")`, 40ms)가 보고 `commit` 한다. release 단축키는 그 사이에 다른
   단축키(Alt+Tab)가 눌리면 Hyprland가 실행하지 않아서 쓸 수 없다. 시험: `hyprctl dispatch 'hl.dsp.exec_cmd((function() shittim_switcher("next")() return "true" end)())'`
 - Wine/Proton 트레이 창(explorer.exe, 제목 없음)은 창 규칙 `wine-tray`로 `special:winetray`에 보낸다 (블루 아카이브·카카오톡 공통).

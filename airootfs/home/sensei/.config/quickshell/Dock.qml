@@ -44,7 +44,7 @@ PanelWindow {
     function launch(app) {
         if (app.cmd[0] === "settings") Ui.settings("toggle")
         else if (app.cmd.length) Quickshell.execDetached(app.cmd)
-        else Arona.say(app.name + " 기능은 아직 준비 중이에요.\n조금만 기다려 주세요!")
+        else Arona.say(Arona.lines["not-ready"])
     }
 
     // ---------- dock ----------

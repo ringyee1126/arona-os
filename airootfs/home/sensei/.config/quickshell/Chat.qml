@@ -52,10 +52,10 @@ PanelWindow {
                     const f = line.split("\t"), mime = chat.geminiMime(f[0])
                     total += parseInt(f[1]) || 0
                     if (!mime) return Arona.fail("'" + f[2] + "' 같은 형식은 아직 읽지 못해요.\n사진 · PDF · 글 · 소리 · 영상 파일을 주세요.")
-                    if (!f[3] || total > 15000000) return Arona.fail("파일이 너무 커요.\n모두 합쳐 15MB까지만 받을 수 있어요.")
+                    if (!f[3] || total > 15000000) return Arona.fail(Arona.lines["err-filebig"])
                     parts.push({ inlineData: { mimeType: mime, data: f[3] } })
                 }
-                if (!parts.length) return Arona.fail("파일을 읽지 못했어요.")
+                if (!parts.length) return Arona.fail(Arona.lines["err-fileread"])
                 Arona.ask(reader.shown, parts.concat([{ text: reader.question }]))
             }
         }

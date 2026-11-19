@@ -12,25 +12,44 @@ Singleton {
     signal say(string text)
     onSay: text => speak(text)
 
-    // 목소리: 데스크탑의 음성 복제 서버(GPT-SoVITS api_v2)에 text= 를 붙여 요청하고 받은 wav를 튼다.
-    // 서버가 꺼져 있으면 2초 안에 조용히 포기한다 (알림 없음). 새 말이 오면 하던 말은 끊는다.
+    // 목소리: 정해진 대사(lines)만, 미리 녹음한 assets/voice/<arona|plana>/<이름>.wav 를 튼다.
+    // 파일이 없는 대사는 조용히 넘어간다. Gemini 답변처럼 그때그때 다른 말은 소리가 없다.
+    readonly property var lines: ({
+        "greet-morning": "좋은 아침이에요, 선생님!\n오늘도 같이 힘내요!",
+        "greet-noon": "점심은 드셨어요?\n아로나는 딸기우유가 좋아요!",
+        "greet-afternoon": "오후도 화이팅이에요, 선생님!",
+        "greet-evening": "오늘 하루도 수고 많으셨어요, 선생님.",
+        "greet-night": "선생님, 벌써 이렇게 늦었어요…\n이제 주무셔야죠!",
+        "pat-1": "에헤헤… 선생님 손 따뜻해요.",
+        "pat-2": "앗, 머리 망가져요~!",
+        "pat-3": "더 쓰다듬어 주셔도 돼요!",
+        "not-ready": "그 기능은 아직 준비 중이에요.\n조금만 기다려 주세요!",
+        "err-nokey": "아직 Gemini API 키가 없어요.\n설정 → 아로나에서 키를 넣어 주세요!",
+        "err-offline": "인터넷에 연결되지 않은 것 같아요…\n연결을 확인해 주세요.",
+        "err-badkey": "API 키가 올바르지 않아요.\n설정 → 아로나에서 다시 확인해 주세요.",
+        "err-quota": "무료 한도를 넘었어요.\n잠시 뒤에 다시 불러 주세요.",
+        "err-busy": "구글 서버가 지금 많이 붐벼요…\n잠시 후 다시 물어봐 주세요.",
+        "err-toolong": "대답이 너무 길어서 잘렸어요.\n질문을 나눠 주세요.",
+        "err-empty": "대답이 비어 있어요. 다시 물어봐 주세요.",
+        "err-filebig": "파일이 너무 커요.\n모두 합쳐 15MB까지만 받을 수 있어요.",
+        "err-fileread": "파일을 읽지 못했어요."
+    })
     function speak(text) {
-        const t = text.replace(/```[\s\S]*?```/g, "").trim()
-        if (!cfg.voice || !cfg.voiceUrl.trim() || !t) return
-        Quickshell.execDetached(["sh", "-c", "pkill -f '^pw-play --media-role Communication '; f=$XDG_RUNTIME_DIR/shittim-voice-$$.wav; "
-            + "curl -sfG --connect-timeout 2 --max-time 90 --data-urlencode \"text=$2\" -o \"$f\" \"$1\" && pw-play --media-role Communication \"$f\"; rm -f \"$f\"",
-            "sh", cfg.voiceUrl.trim(), t])
+        if (!cfg.voice) return
+        for (const k in lines) if (lines[k] === text)
+            return Quickshell.execDetached(["sh", "-c", "pkill -f '^pw-play --media-role Communication '; exec pw-play --media-role Communication \"$1\"",
+                "sh", Qt.resolvedUrl("assets/voice/").toString().replace("file://", "") + who + "/" + k + ".wav"])
     }
 
     function greeting() {
         const h = Theme.hour
-        if (h >= 6 && h < 11) return "좋은 아침이에요, 선생님!\n오늘도 같이 힘내요!"
-        if (h >= 11 && h < 14) return "점심은 드셨어요?\n아로나는 딸기우유가 좋아요!"
-        if (h >= 14 && h < 18) return "오후도 화이팅이에요, 선생님!"
-        if (h >= 18 && h < 23) return "오늘 하루도 수고 많으셨어요, 선생님."
-        return "선생님, 벌써 이렇게 늦었어요…\n이제 주무셔야죠!"
+        if (h >= 6 && h < 11) return lines["greet-morning"]
+        if (h >= 11 && h < 14) return lines["greet-noon"]
+        if (h >= 14 && h < 18) return lines["greet-afternoon"]
+        if (h >= 18 && h < 23) return lines["greet-evening"]
+        return lines["greet-night"]
     }
-    readonly property var patLines: ["에헤헤… 선생님 손 따뜻해요.", "앗, 머리 망가져요~!", "더 쓰다듬어 주셔도 돼요!"]
+    readonly property var patLines: [lines["pat-1"], lines["pat-2"], lines["pat-3"]]
 
     // ---------- settings (carried over from ARONA 1.0's data/settings.json) ----------
     property alias settings: cfg
@@ -54,8 +73,7 @@ Singleton {
             property string userName: "선생님"
             property string memoryNotes: ""
             property bool sounds: true          // 버튼 효과음 (Sfx.qml)
-            property bool voice: true           // 아로나 목소리 (speak())
-            property string voiceUrl: ""        // 음성 복제 서버, 예: http://192.168.0.10:9880/tts?text_lang=ko&ref_audio_path=...
+            property bool voice: true           // 녹음된 대사 재생 (speak())
         }
     }
 
@@ -124,7 +142,7 @@ Singleton {
     function ask(text, parts) {
         if (replying || !String(text).trim()) return
         replyText = ""; replyError = ""
-        if (!ready) { replyMood = "surprised"; replyError = "아직 Gemini API 키가 없어요.\n설정 → 아로나에서 키를 넣어 주세요!"; return }
+        if (!ready) return fail(lines["err-nokey"])
         replying = true; replyMood = "thinking"
         const model = cfg.model.trim() || "gemini-flash-latest"
         job = { turns: history.concat([{ role: "user", text: String(text), parts: parts || null }]),
@@ -156,10 +174,10 @@ Singleton {
             arona.replying = false
             const c = data && data.candidates && data.candidates[0]
             if (!c) return arona.fail(data && data.promptFeedback && data.promptFeedback.blockReason
-                                      ? "그 부탁은 안전 필터에 걸렸어요…" : "대답이 비어 있어요. 다시 물어봐 주세요.")
+                                      ? "그 부탁은 안전 필터에 걸렸어요…" : lines["err-empty"])
             const raw = ((c.content && c.content.parts) || []).filter(p => !p.thought).map(p => p.text || "").join("")
             const body = raw.replace(/\[\[표정:[^\]]*\]\]/g, "").trim()
-            if (!body) return arona.fail(c.finishReason === "MAX_TOKENS" ? "대답이 너무 길어서 잘렸어요.\n질문을 나눠 주세요." : "대답이 비어 있어요. 다시 물어봐 주세요.")
+            if (!body) return arona.fail(c.finishReason === "MAX_TOKENS" ? lines["err-toolong"] : lines["err-empty"])
             const tag = raw.match(/\[\[표정:([^\]]*)\]\]/)
             arona.replyMood = arona.moodOf(tag ? tag[1] : "")
             arona.replyText = body
@@ -191,15 +209,15 @@ Singleton {
         }
         x.send()
     }
-    function fail(msg) { replyMood = "surprised"; replyError = msg }
+    function fail(msg) { replyMood = "surprised"; replyError = msg; speak(msg) }
     function errorText(status, data, model) {
         const msg = (data && data.error && data.error.message) || ""
-        if (status === 0) return "인터넷에 연결되지 않은 것 같아요…\n연결을 확인해 주세요."
-        if ((status === 400 || status === 403) && /API.?key/i.test(msg)) return "API 키가 올바르지 않아요.\n설정 → 아로나에서 다시 확인해 주세요."
+        if (status === 0) return lines["err-offline"]
+        if ((status === 400 || status === 403) && /API.?key/i.test(msg)) return lines["err-badkey"]
         if (status === 400 || status === 403) return "요청이 거부됐어요. " + msg.slice(0, 120)
         if (status === 404) return "'" + model + "' 모델을 찾을 수 없어요.\n설정 → 아로나에서 다른 모델을 골라 주세요."
-        if (status === 429) return "무료 한도를 넘었어요.\n잠시 뒤에 다시 불러 주세요."
-        if (status >= 500) return "구글 서버가 지금 많이 붐벼요…\n잠시 후 다시 물어봐 주세요."
+        if (status === 429) return lines["err-quota"]
+        if (status >= 500) return lines["err-busy"]
         return "부탁을 처리하지 못했어요. (HTTP " + status + ")"
     }
     Timer {
@@ -207,7 +225,7 @@ Singleton {
         onTriggered: if (arona.xhr) {
             const x = arona.xhr; arona.xhr = null; x.abort()
             if (arona.retry()) return
-            arona.replying = false; arona.fail("구글 서버가 지금 많이 붐벼요…\n잠시 후 다시 물어봐 주세요.")
+            arona.replying = false; arona.fail(lines["err-busy"])
         }
     }
 }

@@ -31,7 +31,7 @@ ShellRoot {
     }
     Connections {
         target: Arona
-        function onReplyTextChanged() { if (Arona.replyText) { Sfx.play("receive"); Arona.speak(Arona.replyText) } }
+        function onReplyTextChanged() { if (Arona.replyText) Sfx.play("receive") }
         function onReplyErrorChanged() { if (Arona.replyError) Sfx.play("error") }
     }
     IpcHandler {

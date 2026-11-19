@@ -606,8 +606,7 @@ FloatingWindow {
                     T { anchors.verticalCenter: parent.verticalCenter; text: "아로나 목소리"; font.pixelSize: 18 * win.s; font.weight: Font.Bold }
                     Toggle { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; on: Arona.settings.voice; onToggled: Arona.settings.voice = !Arona.settings.voice }
                 }
-                Sub { text: "데스크탑의 음성 서버 주소. 서버가 꺼져 있으면 목소리만 조용히 안 나와요." }
-                Field { width: parent.width; placeholder: "http://192.168.0.10:9880/tts?text_lang=ko&ref_audio_path=…"; text: Arona.settings.voiceUrl; onTextChanged: Arona.settings.voiceUrl = text.trim() }
+                Sub { text: "인사, 쓰다듬기처럼 정해진 대사를 녹음된 목소리로 들려줘요." }
             }
             Item {
                 width: parent.width; height: mixBtn.height

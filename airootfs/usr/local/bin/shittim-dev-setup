@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# First login of the installed system (once, needs internet): VS Code extensions so Visual Studio-style
+# C# / C++ work happens in VS Code, plus the Claude Code panel. (Claude Code itself ships in the image.)
+done="$HOME/.config/shittim/dev-setup-done"
+[[ -f $done ]] && exit 0
+for _ in $(seq 60); do curl -fsI https://open-vsx.org >/dev/null 2>&1 && break; sleep 10; done
+for ext in muhammad-sammy.csharp llvm-vs-code-extensions.vscode-clangd ms-ceintl.vscode-language-pack-ko anthropic.claude-code; do
+  code --install-extension "$ext" >/dev/null 2>&1 || true
+done
+touch "$done"
+notify-send -a 아로나 "개발 환경 준비 완료" "Claude Code와 C#·C++ 도구를 설치했어요. 터미널에서 claude 를 입력해 보세요!"

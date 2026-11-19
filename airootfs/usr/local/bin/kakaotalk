@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# KakaoTalk (official Windows build) on Shittim OS through Wine. The first run downloads Kakao's own installer.
+export WINEPREFIX="$HOME/.local/share/kakaotalk" LANG=ko_KR.UTF-8 WINEDEBUG=-all
+find_exe() { find "$WINEPREFIX/drive_c" -name KakaoTalk.exe -path '*Kakao*' 2>/dev/null | head -n1; }
+EXE=$(find_exe)
+if [[ -z $EXE ]]; then
+  notify-send -a 아로나 "카카오톡 준비 중" "처음 한 번만 설치해요. 설치 창이 뜨면 안내대로 눌러 주세요."
+  mkdir -p "$WINEPREFIX"
+  tmp=$(mktemp --suffix=.exe)
+  if ! curl -fsSL -o "$tmp" "https://app-pc.kakaocdn.net/talk/win32/KakaoTalk_Setup.exe"; then
+    notify-send -a 아로나 "카카오톡" "설치 파일을 받지 못했어요. 인터넷 연결을 확인해 주세요."; rm -f "$tmp"; exit 1
+  fi
+  wineboot -u >/dev/null 2>&1
+  # Korean UI fonts Windows apps ask for -> Noto Sans CJK KR, so nothing shows up as boxes
+  reg=$(mktemp --suffix=.reg)
+  printf 'REGEDIT4\n\n[HKEY_CURRENT_USER\Software\Wine\Fonts\Replacements]\n"Gulim"="Noto Sans CJK KR"\n"GulimChe"="Noto Sans CJK KR"\n"Dotum"="Noto Sans CJK KR"\n"Batang"="Noto Sans CJK KR"\n"Malgun Gothic"="Noto Sans CJK KR"\n' > "$reg"
+  wine regedit "$reg" >/dev/null 2>&1; rm -f "$reg"
+  wine "$tmp"; rm -f "$tmp"
+  EXE=$(find_exe)
+  [[ -n $EXE ]] || { notify-send -a 아로나 "카카오톡" "설치가 끝나지 않았어요. 다시 눌러 주세요."; exit 1; }
+fi
+exec wine "$EXE"

@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Builds the hyprbars title-bar plugin (□ ✕ on every window) for the Hyprland that is installed right now.
+# A plugin only loads in the exact Hyprland it was built against, so the pacman hook
+# /etc/pacman.d/hooks/shittim-hyprbars.hook runs this after every Hyprland update; build.sh runs it for the ISO.
+#   shittim-hyprbars-rebuild [SOURCE_DIR] [DEST_DIR]
+set -euo pipefail
+S=${1:-/usr/local/src/hyprland-plugins}
+D=${2:-/usr/lib/hyprland-plugins}
+[[ -d $S/.git ]] || git clone -q https://github.com/hyprwm/hyprland-plugins.git "$S"
+git -C "$S" fetch -q origin || echo "hyprbars: offline, building the source already here"
+
+# hyprpm.toml pins a plugin commit for each Hyprland release; releases without a pin build from main
+hc=$(sed -n 's/.*GIT_COMMIT_HASH *"\([0-9a-f]*\)".*/\1/p' /usr/include/hyprland/src/version.h)
+pin=""
+[[ -n $hc ]] && pin=$(grep -oE "\"$hc\", *\"[0-9a-f]{40}\"" "$S/hyprpm.toml" | grep -oE '[0-9a-f]{40}"$' | tr -d '"' || true)
+git -C "$S" checkout -q "${pin:-origin/main}"
+
+rm -f "$S/hyprbars/hyprbars.so"
+make -s -C "$S/hyprbars"
+install -Dm755 "$S/hyprbars/hyprbars.so" "$D/hyprbars.so"
+echo "hyprbars: built for Hyprland ${hc:0:7} -> $D/hyprbars.so"

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Dev mode for the QEMU test VM. run-vm.sh shares the Windows project's sensei/.config folder
+# over 9p (tag "shittimdev"); copy changed files into ~/.config every second so Quickshell and
+# Hyprland hot-reload. On real hardware there is no such share, so this exits immediately.
+grep -qs shittimdev /sys/bus/virtio/drivers/9pnet_virtio/*/mount_tag || exit 0
+sudo mkdir -p /run/shittimdev
+mountpoint -q /run/shittimdev || sudo mount -t 9p -o trans=virtio,version=9p2000.L,ro shittimdev /run/shittimdev || exit 1
+while true; do
+  cp -ru --preserve=timestamps /run/shittimdev/. "$HOME/.config/"   # keep host mtimes, or a skewed clock stops syncing
+  sleep 1
+done

@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+# Shittim OS installer: copies this live system onto ONE partition and makes it bootable with GRUB.
+# Everything else on the disk (the EFI partition's other boot entries, Windows' D: recovery partition) stays.
+#   sudo shittim-install            (asks everything)
+set -euo pipefail
+[[ $EUID -eq 0 ]] || exec sudo "$0" "$@"
+say() { printf '\n\e[1;36m[아로나]\e[0m %s\n' "$*"; }
+die() { printf '\n\e[1;31m[아로나]\e[0m %s\n' "$*" >&2; exit 1; }
+[[ -d /run/archiso ]] || die "라이브 USB(설치용)에서 실행해 주세요."
+# With enough RAM the live system copies itself to memory at boot (copytoram) and unmounts the USB.
+# The kernel we install still lives on the USB, so mount it again (found by the UUID it was booted with).
+if [[ ! -d /run/archiso/bootmnt/arch ]]; then
+  uuid=$(sed -n 's/.*archisosearchuuid=\([^ ]*\).*/\1/p' /proc/cmdline)
+  mkdir -p /run/archiso/bootmnt
+  [[ -n $uuid ]] && mount -o ro "/dev/disk/by-uuid/$uuid" /run/archiso/bootmnt 2>/dev/null \
+    || die "설치 USB를 찾지 못했어요. USB를 꽂은 채로 다시 실행해 주세요."
+fi
+
+say "선생님, 싯딤의 상자를 이 컴퓨터에 설치할게요. 먼저 디스크를 확인해 주세요."
+lsblk -o NAME,SIZE,FSTYPE,LABEL,PARTLABEL,MOUNTPOINTS
+
+# ---------- 1. where ----------
+read -rp $'\n설치할 파티션 이름 (예: nvme0n1p3) — 이 파티션의 내용은 모두 지워져요: ' PART
+TARGET=/dev/${PART#/dev/}
+[[ -b $TARGET ]] || die "$TARGET 은(는) 없는 파티션이에요."
+[[ $(lsblk -no TYPE "$TARGET") == part ]] || die "디스크 전체가 아니라 파티션 하나를 골라 주세요."
+ESP=$(lsblk -nrpo NAME,PARTTYPE | awk 'tolower($2)=="c12a7328-f81f-11d2-ba4b-00a0c93ec93b"{print $1; exit}')
+read -rp "EFI 파티션 [${ESP:-없음}] (Enter = 그대로): " in
+ESP=${in:+/dev/${in#/dev/}}; ESP=${ESP:-$(lsblk -nrpo NAME,PARTTYPE | awk 'tolower($2)=="c12a7328-f81f-11d2-ba4b-00a0c93ec93b"{print $1; exit}')}
+[[ -b ${ESP:-} ]] || die "EFI 파티션을 찾지 못했어요."
+[[ $ESP != "$TARGET" ]] || die "EFI 파티션에는 설치할 수 없어요."
+
+# ---------- 2. who ----------
+while :; do
+  read -rsp "선생님 비밀번호 (잠금화면·sudo에 사용): " PW1; echo
+  read -rsp "한 번 더: " PW2; echo
+  [[ -n $PW1 && $PW1 == "$PW2" ]] && break
+  echo "비밀번호가 비어 있거나 서로 달라요. 다시 입력해 주세요."
+done
+
+echo
+echo "  설치할 곳 : $TARGET  ($(lsblk -no SIZE "$TARGET"), 안의 내용은 전부 지워져요)"
+echo "  부팅 파일 : $ESP  (지우지 않고 ShittimOS 항목만 추가해요)"
+read -rp $'정말 진행할까요? 진행하려면 대문자로 YES 를 입력하세요: ' ok
+[[ $ok == YES ]] || die "설치를 취소했어요. 아무것도 바뀌지 않았어요."
+
+# ---------- 3. filesystem: btrfs with subvolumes for snapshots ----------
+say "파티션을 준비하는 중이에요… (btrfs)"
+umount -R /mnt 2>/dev/null || true
+# Erase the old filesystem's signatures first: mkfs.btrfs leaves NTFS/ext4 headers in place, and mount would
+# then still see the old filesystem.
+wipefs -qaf "$TARGET"
+mkfs.btrfs -q -f -L ShittimOS "$TARGET"
+mount -t btrfs "$TARGET" /mnt
+for sv in @ @home @snapshots @log; do btrfs -q subvolume create "/mnt/$sv"; done
+umount /mnt
+O=noatime,compress=zstd
+mount -t btrfs -o "$O,subvol=@" "$TARGET" /mnt
+mkdir -p /mnt/{home,.snapshots,var/log,boot/efi}
+mount -t btrfs -o "$O,subvol=@home" "$TARGET" /mnt/home
+mount -t btrfs -o "$O,subvol=@snapshots" "$TARGET" /mnt/.snapshots
+mount -t btrfs -o "$O,subvol=@log" "$TARGET" /mnt/var/log
+mount "$ESP" /mnt/boot/efi
+
+# ---------- 4. copy the live system ----------
+say "싯딤의 상자를 복사하는 중이에요… (몇 분 걸려요)"
+rsync -aAXH --info=progress2 \
+  --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found","/boot/efi/*","/home/sensei/.cache/*"} / /mnt/
+# the live image keeps the kernel and microcode on the USB, not in /boot
+B=/run/archiso/bootmnt/arch/boot
+cp "$B/x86_64/vmlinuz-linux" /mnt/boot/
+cp "$B"/*-ucode.img /mnt/boot/ 2>/dev/null || true
+genfstab -U /mnt | grep -v '/boot/efi\b' > /mnt/etc/fstab
+echo "UUID=$(blkid -s UUID -o value "$ESP")  /boot/efi  vfat  umask=0077  0 2" >> /mnt/etc/fstab
+
+# ---------- 5. turn the live copy into an installed system ----------
+say "설치된 시스템을 정리하는 중이에요…"
+printf 'sensei:%s\n' "$PW1" | arch-chroot /mnt chpasswd
+arch-chroot /mnt /bin/bash -e <<'CHROOT'
+# live-only pieces
+rm -f /etc/systemd/system/multi-user.target.wants/shittim-livepass.service /etc/systemd/system/shittim-livepass.service
+rm -f /etc/systemd/system/multi-user.target.wants/{pacman-init,choose-mirror,reflector}.service \
+      /etc/systemd/system/{pacman-init,choose-mirror,livecd-talk,livecd-alsa-unmuter}.service /etc/motd
+rm -f /etc/sudoers.d/10-sensei
+echo '%wheel ALL=(ALL:ALL) ALL' > /etc/sudoers.d/10-wheel && chmod 440 /etc/sudoers.d/10-wheel
+passwd -l root >/dev/null
+date +%F > /home/sensei/.config/shittim/since
+chown -R sensei:sensei /home/sensei
+
+# a normal initramfs instead of the live one
+rm -f /etc/mkinitcpio.conf.d/archiso.conf
+printf '%s\n' 'ALL_kver="/boot/vmlinuz-linux"' "PRESETS=('default')" 'default_image="/boot/initramfs-linux.img"' > /etc/mkinitcpio.d/linux.preset
+sed -i "/^HOOKS=/ s/ kms / kms plymouth /" /etc/mkinitcpio.conf   # boot splash
+mkinitcpio -P >/dev/null
+
+# boot loader: GRUB (keeps the kernel on btrfs, so the small shared EFI partition only gets grubx64.efi)
+sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash loglevel=3"/; s/^#\?GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' /etc/default/grub
+grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ShittimOS --recheck >/dev/null
+grub-mkconfig -o /boot/grub/grub.cfg >/dev/null 2>&1
+
+# snapshots before every update (snap-pac) + snapshots in the boot menu (grub-btrfs)
+umount /.snapshots && rmdir /.snapshots
+snapper --no-dbus -c root create-config /
+btrfs -q subvolume delete /.snapshots
+mkdir /.snapshots && mount /.snapshots && chmod 750 /.snapshots
+sed -i 's/^TIMELINE_CREATE=.*/TIMELINE_CREATE="no"/; s/^NUMBER_LIMIT=.*/NUMBER_LIMIT="10"/' /etc/snapper/configs/root
+systemctl enable grub-btrfsd.service >/dev/null 2>&1 || true
+snapper --no-dbus -c root create -d "ARONA OS 설치 직후" >/dev/null
+CHROOT
+
+umount -R /mnt
+say "설치가 끝났어요! USB를 빼고 다시 시작하면 싯딤의 상자가 켜져요. 기다리고 있을게요, 선생님!"

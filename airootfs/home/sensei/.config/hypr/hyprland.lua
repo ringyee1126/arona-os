@@ -111,37 +111,89 @@ hl.bind(mod .. " + Super_L", hl.dsp.exec_cmd("quickshell ipc call menu toggle"),
 -- Super + 왼쪽/오른쪽 버튼 끌기 = 창 옮기기 / 크기 바꾸기 (제목 표시줄이 없는 창도)
 hl.bind(mod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
 hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
--- Super + ←/→ = 화면 반쪽에 붙이기, Super + ↑ = 최대화/복원
-local function half(right)
-    return function()
-        local w, m = hl.get_active_window(), hl.get_active_monitor()
-        if not w or not m then return end
-        local r, g = m.reserved, 12          -- reserved.top / .bottom ...: 상단 바와 독이 차지한 자리
-        local L, T, R, B = r.left or 0, r.top or 0, r.right or 0, r.bottom or 0
-        local x, y = m.x + L + g, m.y + T + g
-        local fw, fh = m.width - L - R - g * 2, m.height - T - B - g * 2
-        local hw = math.floor((fw - g) / 2)
-        hl.dispatch(hl.dsp.window.resize({ x = hw, y = fh }))
-        hl.dispatch(hl.dsp.window.move({ x = right and (x + hw + g) or x, y = y }))
-    end
+-- ---------- 창 붙이기 (Windows의 스냅) ----------
+-- 자리 이름: left right top(=최대화) tl tr bl br(=화면 1/4).  zone_box = 그 자리의 x, y, 너비, 높이 (상단 바·독은 피한다)
+local function zone_box(zone, m)
+    local r, g = m.reserved, 12          -- reserved.top / .bottom ...: 상단 바와 독이 차지한 자리
+    local L, T, R, B = r.left or 0, r.top or 0, r.right or 0, r.bottom or 0
+    local x, y = m.x + L + g, m.y + T + g
+    local fw, fh = m.width - L - R - g * 2, m.height - T - B - g * 2
+    local hw, hh = math.floor((fw - g) / 2), math.floor((fh - g) / 2)
+    if zone == "top" then return x, y, fw, fh end
+    local right  = zone == "right" or zone == "tr" or zone == "br"
+    local bottom = zone == "bl" or zone == "br"
+    local full   = zone == "left" or zone == "right"
+    return right and (x + hw + g) or x, bottom and (y + hh + g) or y, hw, full and fh or hh
 end
--- 창을 끌다가 마우스가 화면 가장자리에 닿은 채로 놓으면: 왼쪽/오른쪽 = 반쪽, 위 = 최대화 (Windows의 스냅).
--- 끌기가 끝났다는 신호가 따로 없어서, 왼쪽 버튼을 누를 때 창 위치를 적어 두고 뗄 때 위치가 달라졌으면 끈 것으로 본다.
-local press = nil
+local snapped = {}     -- 붙이기 전의 창 크기 (창 주소 → {w, h}): 붙인 창을 다시 끌어내면 이 크기로 돌아간다
+function shittim_snap(zone)   -- 전역: hyprctl로 시험할 수 있게
+    local w, m = hl.get_active_window(), hl.get_active_monitor()
+    if not w or not m then return end
+    if (w.fullscreen or 0) ~= 0 then hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" })) end
+    if zone == "top" then
+        if (w.fullscreen or 0) == 0 then hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" })) end
+        return
+    end
+    snapped[w.address] = snapped[w.address] or { w = w.size.x, h = w.size.y }
+    local x, y, bw, bh = zone_box(zone, m)
+    hl.dispatch(hl.dsp.window.resize({ x = bw, y = bh }))
+    hl.dispatch(hl.dsp.window.move({ x = x, y = y }))
+end
+local function half(right) return function() shittim_snap(right and "right" or "left") end end   -- Super + ←/→
+
+-- 창을 끌다가 마우스가 화면 가장자리에 닿은 채로 놓으면 그 자리에 붙인다: 왼쪽/오른쪽 = 반쪽, 위 = 최대화, 모서리 = 1/4.
+-- 끄는 동안에는 놓으면 갈 자리를 미리 보여 준다 (SnapPreview.qml).
+-- 끌기 시작/끝 신호가 따로 없어서: 왼쪽 버튼을 누를 때 창 위치를 적어 두고, 그 뒤로 위치가 달라졌으면 끄는 중으로 본다.
+local press, drag_watch = nil, nil
+local function zone_at(c, m)
+    local C = 60                                    -- 모서리로 치는 범위
+    local l, r = c.x <= m.x + 1, c.x >= m.x + m.width - 2
+    local t, b = c.y <= m.y + 1, c.y >= m.y + m.height - 2
+    local nl, nr = c.x <= m.x + C, c.x >= m.x + m.width - C
+    local nt, nb = c.y <= m.y + C, c.y >= m.y + m.height - C
+    if (l and nt) or (t and nl) then return "tl" end
+    if (r and nt) or (t and nr) then return "tr" end
+    if (l and nb) or (b and nl) then return "bl" end
+    if (r and nb) or (b and nr) then return "br" end
+    return l and "left" or r and "right" or t and "top" or nil
+end
+local function preview(zone, m)
+    if not zone then return hl.dispatch(hl.dsp.exec_cmd("quickshell ipc call snap hide")) end
+    local x, y, bw, bh = zone_box(zone, m)
+    hl.dispatch(hl.dsp.exec_cmd(string.format("quickshell ipc call snap box %d %d %d %d", x, y, bw, bh)))
+end
+local function drag_end()
+    if drag_watch then drag_watch:set_enabled(false) end
+    if press and press.zone then preview(nil) end
+    press = nil
+end
+drag_watch = hl.timer(function()
+    local p, w, c, m = press, hl.get_active_window(), hl.get_cursor_pos(), hl.get_monitor_at_cursor()
+    if not (p and w and c and m) or w.address ~= p.address or not w.floating then return drag_end() end
+    p.ticks = p.ticks + 1
+    if p.ticks > 1200 then return drag_end() end                 -- 버튼을 뗀 신호를 놓쳤을 때 (1분)
+    if not p.dragging then
+        if w.at.x == p.x and w.at.y == p.y then return end        -- 아직 안 끌었다
+        p.dragging = true
+        local o = snapped[w.address]                              -- 붙여 둔 창을 끌어냈다: 원래 크기로
+        if o and (w.fullscreen or 0) == 0 then hl.dispatch(hl.dsp.window.resize({ x = o.w, y = o.h })) end
+        snapped[w.address] = nil
+    end
+    local z = zone_at(c, m)
+    if z ~= p.zone then p.zone = z; preview(z, m) end
+end, { timeout = 50, type = "repeat" })
+drag_watch:set_enabled(false)
 hl.bind("mouse:272", function()
     local w = hl.get_active_window()
-    press = w and { address = w.address, x = w.at.x or w.at[1], y = w.at.y or w.at[2] } or nil
+    if not w then return end
+    press = { address = w.address, x = w.at.x, y = w.at.y, ticks = 0 }
+    drag_watch:set_enabled(true)
 end, { non_consuming = true })
 hl.bind("mouse:272", function()
     local p, w, c, m = press, hl.get_active_window(), hl.get_cursor_pos(), hl.get_monitor_at_cursor()
-    press = nil
-    if not (p and w and c and m) or w.address ~= p.address or not w.floating then return end
-    if (w.at.x or w.at[1]) == p.x and (w.at.y or w.at[2]) == p.y then return end        -- 그냥 클릭
-    if c.x <= m.x + 1 then half(false)()
-    elseif c.x >= m.x + m.width - 2 then half(true)()
-    elseif c.y <= m.y + 1 and (w.fullscreen or 0) == 0 then
-        hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }))
-    end
+    local dragged = p and w and w.address == p.address and w.floating and (p.dragging or w.at.x ~= p.x or w.at.y ~= p.y)
+    drag_end()
+    if dragged and c and m then local z = zone_at(c, m); if z then shittim_snap(z) end end
 end, { release = true, non_consuming = true })
 hl.bind(mod .. " + left",  half(false))
 hl.bind(mod .. " + right", half(true))

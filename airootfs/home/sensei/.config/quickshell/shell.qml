@@ -16,6 +16,7 @@ ShellRoot {
     PowerMenu { screen: Quickshell.screens[0] }
     Switcher { screen: Quickshell.screens[0] }
     Capture { screen: Quickshell.screens[0] }
+    SnapPreview { screen: Quickshell.screens[0] }
     // Super+I (설정) / Super+A (아로나와 대화); "settings open bluetooth" opens a given page.
     // 설정 itself runs in its own process (settings-app.qml), see Ui.settings().
     IpcHandler {

@@ -90,8 +90,8 @@ Scope {
     // ---------- 녹화 중: 빨간 테두리 + 조작 막대 ----------
     // Hyprland에는 "화면에는 보이고 녹화에는 안 찍히는" 레이어가 없다 (no_screen_share 는 그 자리를 검게 칠한다).
     // 그래서 shittim-shot 이 화면 가장자리 4px 안쪽만 녹화하고, 테두리는 그 바깥 4px에 그린다 → 보이지만 안 찍힌다.
-    // 막대: 녹화 영역 위에 자리가 있으면 그 바깥에 늘 보이고, 전체 화면처럼 자리가 없으면 마우스를 위쪽 테두리에
-    // 댔을 때만 내려온다 (내려와 있는 동안은 녹화에 찍힌다).
+    // 막대는 늘 보인다 (사용자 요청). 녹화 영역 위에 자리가 있으면 그 바깥에 놓여 안 찍히고, 전체 화면처럼 자리가
+    // 없으면 영역 안쪽 위에 놓여 영상에도 찍힌다.
     property rect frame: Qt.rect(4, 4, 100, 100)     // 녹화 영역 (shittim-shot 이 알려 준다)
     readonly property int t: 4                        // 테두리 두께 = 녹화 영역 바깥 여백
     IpcHandler {
@@ -111,7 +111,7 @@ Scope {
         mask: Region { item: hot }           // 막대(와 위쪽 테두리)만 눌리고 나머지는 아래 창으로
         readonly property color line: cap.state === "paused" ? "#F7C63C" : "#FF2D4A"
         readonly property bool outside: cap.frame.y - cap.t >= pill.height + 12     // 영역 위에 막대 놓을 자리가 있다
-        readonly property bool shown: outside || hover.containsMouse || cap.state === "paused"
+        readonly property bool shown: true
         Rectangle {
             x: cap.frame.x - cap.t; y: cap.frame.y - cap.t; width: cap.frame.width + cap.t * 2; height: cap.frame.height + cap.t * 2
             color: "transparent"; border.width: cap.t; border.color: rec.line

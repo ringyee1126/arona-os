@@ -116,10 +116,13 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
   녹화 중 PrtSc = 녹화 끝. wf-recorder → `~/비디오/화면 녹화/*.mp4`, 소리는 기본 출력 장치의 모니터.
   일시정지(`shittim-shot pause`)는 wf-recorder에 없어서 조각(`$XDG_RUNTIME_DIR/shittim-rec/seg-N.mp4`)으로 찍고 끝에 ffmpeg concat.
   녹화 중 표시: Hyprland의 `no_screen_share` 레이어 규칙은 그 자리를 **검게 칠해서** 못 쓴다. 대신 전체 화면도 가장자리 4px 안쪽만
-  녹화하고(1912x1072) 빨간 테두리를 그 바깥에 그린다. 조작 막대는 영역 위에 자리가 있으면 바깥에 늘 보이고, 전체 화면이면
-  마우스를 위쪽 테두리에 댈 때만 내려온다(그동안은 찍힌다).
-- 창 스냅: 창을 끌다 마우스를 화면 왼쪽/오른쪽 끝에서 놓으면 반쪽, 위쪽 끝이면 최대화 (hyprland.lua, `mouse:272` 누름/뗌
-  non_consuming 단축키로 "창 위치가 바뀐 채 가장자리에서 뗐다"를 판단. 끌기 종료 이벤트가 없다).
+  녹화하고(1912x1072) 빨간 테두리를 그 바깥에 그린다. 조작 막대는 늘 보인다(사용자 요청): 영역 위에 자리가 있으면 바깥(안 찍힘),
+  전체 화면이면 안쪽 위(영상에 찍힘).
+- 창 스냅 (hyprland.lua "창 붙이기"): 창을 끌다 마우스를 화면 끝에서 놓으면 왼쪽/오른쪽 = 반쪽, 위 = 최대화, 모서리(60px) = 1/4.
+  끄는 동안 `SnapPreview.qml`이 갈 자리를 미리 보여 주고(`ipc call snap box x y w h` / `hide`), 붙인 창을 다시 끌어내면 원래 크기로.
+  끌기 시작/끝 이벤트가 없어서 `mouse:272` 누름/뗌 non_consuming 단축키 + 50ms 타이머로 "누른 뒤 창 위치가 바뀜"을 본다.
+  시험: `hyprctl dispatch "hl.dsp.exec_cmd((function() shittim_snap('tl') return 'true' end)())"`.
+  주의: IpcHandler 함수 이름으로 `show`는 못 쓴다 (`quickshell ipc show`와 겹침). QML 파일만 고쳐서 IPC가 안 바뀌면 `touch shell.qml`.
 - **내장 스피커가 안 잡힌다 (2026-11-19)**: PipeWire에 "Dummy Output"만 있다. 스피커 칩은 SoundWire의 Realtek RT722
   (ACPI `\_SB.PCI0.GPPA.ACP.SDWC.SW21`, _ADR 0x000030025d072201, 커널 표 `acp70_rt722_only`에 있음). 그런데 BIOS에
   `acp-audio-config-flag`가 없어 `snd_amd_acp_find_config()`가 "마이크 전용"을 돌려주고 snd_pci_ps(SoundWire) 대신 snd_acp_pci가 붙는다.

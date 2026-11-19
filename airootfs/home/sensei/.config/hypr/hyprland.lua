@@ -116,15 +116,19 @@ hl.bind(mod .. " + SHIFT + E", hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.exit()'
 -- 윈도우 키만 눌렀다 떼면 오른쪽 위 ≡ 메뉴
 -- 떼는 순간에 거는 단축키(SUPER + Super_L, release)는 가상 키보드에서는 되는데 노트북 키보드에서는 불리지 않는다(원인 미확인).
 -- 그래서 Alt+Tab처럼 키 상태를 직접 본다: 누르고 있는 동안 다른 키도 마우스 끌기도 없었으면 뗄 때 메뉴.
-local super = nil   -- 윈도우 키가 눌려 있는 동안 { x, y = 누를 때 마우스 자리, solo = 아직 혼자 눌렸나 }
+local super = nil   -- 윈도우 키가 눌려 있는 동안 { solo = 아직 혼자 눌렸나, geo = 직전 틱의 활성 창 자리 }
+local function geo()   -- 마우스 버튼은 is_key_down으로 못 본다. Super + 끌기는 창이 움직이거나 커지는 것으로 안다
+    local w = hl.get_active_window()
+    return w and { a = w.address, s = w.at.x .. " " .. w.at.y .. " " .. w.size.x .. " " .. w.size.y }
+end
 hl.timer(function()
     local down = hl.is_key_down("Super_L")
     if down and not super then
-        local c = hl.get_cursor_pos()
-        super = { x = c and c.x or 0, y = c and c.y or 0, solo = true }
+        super = { solo = true, geo = geo() }
     elseif down and super.solo then
-        local c = hl.get_cursor_pos()
-        if c and (math.abs(c.x - super.x) > 10 or math.abs(c.y - super.y) > 10) then super.solo = false end   -- Super + 끌기
+        local g, l = geo(), super.geo
+        super.geo = g
+        if g and l and g.a == l.a and g.s ~= l.s then super.solo = false end
         for code = 9, 255 do   -- 133 = 윈도우 키 자신
             if code ~= 133 and hl.is_key_down(code) then super.solo = false break end
         end

@@ -17,6 +17,9 @@ if [[ -z $EXE ]]; then
   wine regedit "$reg" >/dev/null 2>&1; rm -f "$reg"
   # Wine의 "시스템 트레이" 창(160x20 빈 창)을 띄우지 않는다: 이 OS에는 트레이가 없어 화면에 작은 창으로 떠 있었다
   wine reg add 'HKCU\Software\Wine\X11 Driver' /v ShowSystray /t REG_SZ /d N /f >/dev/null 2>&1
+  # 한글 입력: Wine이 WM_TAKE_FOCUS로 포커스를 직접 가져가는 방식이면 Hyprland에서 카톡 창이 X 입력 포커스를 못 받아
+  # fcitx5(XIM)가 카톡을 입력 중인 창으로 못 본다 (영어만 됨). 끄면 Hyprland가 포커스를 직접 준다.
+  wine reg add 'HKCU\Software\Wine\X11 Driver' /v UseTakeFocus /t REG_SZ /d N /f >/dev/null 2>&1
   # 받은 파일(md, zip, 사진…)을 이 OS의 기본 프로그램으로 연다: "Windows 프로그램이 없습니다" 경고 방지
   command -v shittim-wine-open >/dev/null && shittim-wine-open --register
   wine "$tmp"; rm -f "$tmp"

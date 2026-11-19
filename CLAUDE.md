@@ -131,6 +131,10 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
   빌드까지는 확인했고 **재부팅 후 실제로 소리가 나는지는 미확인.** 되돌리기: updates의 그 파일을 지우고 `depmod -a`.
 - 카카오톡: 창을 옮길 수 있게 Wine 창(`*.exe`)도 hyprbars 제목 표시줄을 쓴다. Wine 트레이 창(explorer.exe 160x20)은
   레지스트리 `HKCU\Software\Wine\X11 Driver\ShowSystray=N` 으로 껐다 (기존 프리픽스에 적용함, 새 설치는 kakaotalk 스크립트).
+- 카카오톡 한글 안 됨(영어만 됨): 카톡 창이 활성이어도 X 입력 포커스가 없어(`XGetInputFocus` = None) fcitx5의 XIM 입력
+  컨텍스트가 `focus:0` 이었다. 레지스트리 `HKCU\Software\Wine\X11 Driver\UseTakeFocus=N` 으로 고침 (기존 프리픽스에 적용함, 새 설치는
+  kakaotalk 스크립트). 확인: `dbus-send --print-reply --dest=org.fcitx.Fcitx5 /controller org.fcitx.Fcitx.Controller1.DebugInfo`
+  에서 카톡이 활성일 때 `wine-preloader frontend:xim ... focus:1` 이어야 한다. 사용자가 한글 입력 확인함 (2026-11-19).
 - Alt+Tab: `Switcher.qml` 창 목록(미리보기, 최근 사용 순). Alt+Tab/Alt+Shift+Tab = `ipc call switcher next/prev`, 마우스로 고르기, Alt+Esc·바깥 클릭 = 취소.
   Alt를 뗀 것은 hyprland.lua의 타이머(`hl.is_key_down("Alt_L")`, 40ms)가 보고 `commit` 한다. release 단축키는 그 사이에 다른
   단축키(Alt+Tab)가 눌리면 Hyprland가 실행하지 않아서 쓸 수 없다. 시험: `hyprctl dispatch 'hl.dsp.exec_cmd((function() shittim_switcher("next")() return "true" end)())'`

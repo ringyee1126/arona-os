@@ -1,9 +1,39 @@
 #!/usr/bin/env bash
-# 스크린샷: 파일로 저장 + 클립보드 복사 + 알림.  shittim-shot [region|full]
-dir="$(xdg-user-dir PICTURES)/스크린샷"; mkdir -p "$dir"
-f="$dir/$(date +%Y-%m-%d_%H-%M-%S).png"
-if [[ ${1:-region} == full ]]; then grim "$f"
-else g=$(slurp) || exit 0; grim -g "$g" "$f"; fi || { notify-send -a 아로나 "스크린샷" "찍지 못했어요."; exit 1; }
-wl-copy --type image/png < "$f"
-pw-play /usr/share/sounds/freedesktop/stereo/camera-shutter.oga 2>/dev/null &
-notify-send -a 아로나 -i "$f" "스크린샷 저장" "${f/#$HOME/\~}"
+# 스크린샷·화면 녹화.  shittim-shot [menu|region|full|rec <full|region> <audio|mute>|stop]
+#   menu (PrtSc): 고르는 목록. 녹화 중이면 목록 대신 녹화를 끝낸다.
+#   스크린샷 → ~/사진/스크린샷 + 클립보드,  녹화 → ~/비디오/화면 녹화 (mp4, wf-recorder)
+say() { notify-send -a 아로나 "$@"; }
+stop() { pkill -INT -x wf-recorder; }
+shot() {
+  dir="$(xdg-user-dir PICTURES)/스크린샷"; mkdir -p "$dir"
+  f="$dir/$(date +%Y-%m-%d_%H-%M-%S).png"
+  if [[ $1 == full ]]; then grim "$f"
+  else g=$(slurp) || exit 0; grim -g "$g" "$f"; fi || { say "스크린샷" "찍지 못했어요."; exit 1; }
+  wl-copy --type image/png < "$f"
+  pw-play /usr/share/sounds/freedesktop/stereo/camera-shutter.oga 2>/dev/null &
+  say -i "$f" "스크린샷 저장" "${f/#$HOME/\~}"
+}
+rec() {   # rec <full|region> <audio|mute>
+  pgrep -x wf-recorder >/dev/null && { stop; exit 0; }
+  dir="$(xdg-user-dir VIDEOS)/화면 녹화"; mkdir -p "$dir"
+  f="$dir/$(date +%Y-%m-%d_%H-%M-%S).mp4"; args=(-f "$f")
+  if [[ $1 == region ]]; then g=$(slurp) || exit 0; args+=(-g "$g"); fi
+  # 컴퓨터에서 나는 소리 = 기본 출력 장치의 모니터 (마이크가 아님)
+  [[ $2 == audio ]] && args+=(--audio="$(pactl get-default-sink).monitor")
+  say -t 2500 "화면 녹화 시작" "PrtSc를 다시 누르면 끝나요."
+  if wf-recorder "${args[@]}" >/dev/null 2>&1 && [[ -s $f ]]; then say "화면 녹화 저장" "${f/#$HOME/\~}"
+  else say "화면 녹화" "녹화하지 못했어요."; exit 1; fi
+}
+case ${1:-menu} in
+  region|full) shot "$1" ;;
+  rec) rec "${2:-full}" "${3:-audio}" ;;
+  stop) stop ;;
+  menu)
+    pgrep -x wf-recorder >/dev/null && { stop; exit 0; }
+    case $(printf '%s\n' "사진: 영역 선택" "사진: 전체 화면" "녹화: 전체 화면 + 컴퓨터 소리" "녹화: 전체 화면 (소리 없이)" \
+                         "녹화: 영역 선택 + 컴퓨터 소리" "녹화: 영역 선택 (소리 없이)" | fuzzel --dmenu --lines 6 --width 34 --prompt "캡처  ") in
+      "사진: 영역"*) shot region ;;  "사진: 전체"*) shot full ;;
+      "녹화: 전체 화면 +"*) rec full audio ;;  "녹화: 전체 화면 ("*) rec full mute ;;
+      "녹화: 영역 선택 +"*) rec region audio ;; "녹화: 영역 선택 ("*) rec region mute ;;
+    esac ;;
+esac

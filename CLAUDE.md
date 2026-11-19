@@ -112,6 +112,10 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
   잠금화면, 쓰다듬기, 방치(창 없이 5분), 업무 시작(3초 뒤 실행), 전원(4초 뒤 실행), 설정·검색·대화 열기, 앱 실행, 알림, 스크린샷,
   할 일 완료, 배터리. 다른 프로세스에서는 `quickshell ipc call arona react <상황>`. **`lines`를 고치면 대본(README)도 고칠 것.**
 - Steam: 고장이 아니었다. 첫 실행 때 창 없이 몇 분간 약 700MB를 받는다 (`~/.local/share/Steam/logs/bootstrap_log.txt`).
+- 화면 녹화: PrtSc = `shittim-shot menu` (fuzzel 목록: 사진 영역/전체, 녹화 전체/영역 × 컴퓨터 소리 포함/없이). 녹화 중 PrtSc = 녹화 끝.
+  wf-recorder → `~/비디오/화면 녹화/*.mp4`. 소리는 기본 출력 장치의 모니터(`pactl get-default-sink`.monitor)를 녹음한다.
+- **소리 출력 장치가 없다 (2026-11-19 확인)**: PipeWire에 "Dummy Output"만 있다. 커널이 HDMI 오디오와 acp-pdm-mach(마이크)만 잡고
+  내장 스피커 코덱(AMD ACP 1022:15e2 rev 72, LG 15Z95U)은 못 잡는다. 블루투스·HDMI를 연결하지 않으면 효과음·목소리·녹화 소리가 전부 무음.
 
 루트 필요 (apply-system.sh)
 - Steam·gamemode 등 패키지, 부팅·종료 컷씬(4.5초 시간 기반 진행 막대, 끝까지 재생, GRUB 메뉴 숨김 - Esc로 표시).

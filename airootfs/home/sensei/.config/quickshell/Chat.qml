@@ -1,4 +1,5 @@
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 import QtQuick
 
@@ -33,12 +34,45 @@ PanelWindow {
     Connections { target: Arona; function onHistoryChanged() { chat.pending = "" } }
     onVisibleChanged: if (visible) input.forceActiveFocus()
 
+    // ---------- files dragged onto the window (from 파일 etc.): sent to Gemini with the next message ----------
+    property var files: []          // absolute paths, at most 5
+    function geminiMime(m) {        // "" = a kind Gemini can't read
+        if (/^(image\/(png|jpeg|webp|heic|heif)|application\/pdf|audio\/|video\/)/.test(m)) return m
+        return /^text\/|json|xml|javascript|x-shellscript/.test(m) ? "text/plain" : ""
+    }
+    Process {
+        id: reader          // one line per file: mime \t bytes \t name \t base64 (empty when the file is too big)
+        property string shown: ""
+        property string question: ""
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const parts = []
+                let total = 0
+                for (const line of text.split("\n").filter(l => l)) {
+                    const f = line.split("\t"), mime = chat.geminiMime(f[0])
+                    total += parseInt(f[1]) || 0
+                    if (!mime) return Arona.fail("'" + f[2] + "' 같은 형식은 아직 읽지 못해요.\n사진 · PDF · 글 · 소리 · 영상 파일을 주세요.")
+                    if (!f[3] || total > 15000000) return Arona.fail("파일이 너무 커요.\n모두 합쳐 15MB까지만 받을 수 있어요.")
+                    parts.push({ inlineData: { mimeType: mime, data: f[3] } })
+                }
+                if (!parts.length) return Arona.fail("파일을 읽지 못했어요.")
+                Arona.ask(reader.shown, parts.concat([{ text: reader.question }]))
+            }
+        }
+    }
     function send() {
         const t = input.text.trim()
-        if (!t || Arona.replying) return
-        pending = t
+        if ((!t && !files.length) || Arona.replying || reader.running) return
+        Sfx.play("send")
         input.text = ""
-        Arona.ask(t)
+        if (!files.length) { pending = t; Arona.ask(t); return }
+        pending = "[첨부] " + files.map(f => f.split("/").pop()).join(", ") + (t ? "\n" + t : "")
+        Arona.replyError = ""
+        reader.shown = pending
+        reader.question = t || "첨부한 파일을 보고 무엇인지 알려 줘."
+        reader.command = ["sh", "-c", 'for f; do n=$(stat -Lc %s -- "$f") || continue; printf "%s\\t%s\\t%s\\t" "$(file -Lb --mime-type -- "$f")" "$n" "${f##*/}"; [ "$n" -le 15000000 ] && base64 -w0 -- "$f"; echo; done', "sh"].concat(files)
+        files = []
+        reader.running = true
     }
 
     Rectangle {
@@ -55,7 +89,7 @@ PanelWindow {
             Avatar { id: headAva; s: 42 / 76 * chat.s; x: 18 * chat.s; anchors.verticalCenter: parent.verticalCenter }
             Column {
                 anchors.left: headAva.right; anchors.leftMargin: 12 * chat.s; anchors.verticalCenter: parent.verticalCenter
-                Text { text: "아로나"; color: "white"; font.family: Theme.font; font.pixelSize: 19 * chat.s; font.weight: Font.Black }
+                Text { text: Arona.name; color: "white"; font.family: Theme.font; font.pixelSize: 19 * chat.s; font.weight: Font.Black }
                 Text { text: Arona.replying ? "입력 중…" : "MomoTalk · 싯딤의 상자"; color: "#F2FFFFFF"; font.family: Theme.font; font.pixelSize: 13 * chat.s }
             }
             Rectangle {
@@ -63,14 +97,14 @@ PanelWindow {
                 width: 32 * chat.s; height: width; radius: width / 2
                 color: closeMa.containsMouse ? "#66FFFFFF" : "#4DFFFFFF"
                 XMark { anchors.centerIn: parent; size: 11 * chat.s; thickness: 2.6 * chat.s }
-                MouseArea { id: closeMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Ui.chatOpen = false }
+                MouseArea { onPressedChanged: if (pressed) Sfx.tap(); id: closeMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Ui.chatOpen = false }
             }
         }
 
         // ---------- messages ----------
         ListView {
             id: list
-            anchors { top: head.bottom; bottom: bar.top; left: parent.left; right: parent.right }
+            anchors { top: head.bottom; bottom: chips.visible ? chips.top : bar.top; left: parent.left; right: parent.right }
             topMargin: 20 * chat.s; bottomMargin: 20 * chat.s
             leftMargin: 18 * chat.s; rightMargin: 18 * chat.s
             spacing: 14 * chat.s
@@ -112,7 +146,7 @@ PanelWindow {
                     Text {
                         id: nameTag
                         x: 50 * chat.s
-                        text: "아로나"; color: Theme.skyDeep
+                        text: Arona.name; color: Theme.skyDeep
                         font.family: Theme.font; font.pixelSize: 13 * chat.s; font.weight: Font.ExtraBold
                     }
                     Rectangle {
@@ -156,6 +190,51 @@ PanelWindow {
             }
         }
 
+        // ---------- attached files (click a chip to remove it) ----------
+        Flow {
+            id: chips
+            visible: chat.files.length > 0
+            anchors { bottom: bar.top; left: parent.left; right: parent.right; margins: 12 * chat.s }
+            spacing: 8 * chat.s
+            Repeater {
+                model: chat.files
+                Rectangle {
+                    id: chip
+                    required property string modelData
+                    required property int index
+                    width: chipText.implicitWidth + 24 * chat.s; height: 32 * chat.s; radius: 16 * chat.s
+                    color: "#E6F5FD"; border.color: Theme.sky; border.width: 1
+                    Text {
+                        id: chipText
+                        anchors.centerIn: parent
+                        text: chip.modelData.split("/").pop().slice(0, 28) + "  ✕"
+                        color: Theme.skyDeep; font.family: Theme.font; font.pixelSize: 14 * chat.s; font.weight: Font.Bold
+                    }
+                    MouseArea {
+                        anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                        onPressedChanged: if (pressed) Sfx.tap()
+                        onClicked: chat.files = chat.files.filter((f, i) => i !== chip.index)
+                    }
+                }
+            }
+        }
+        DropArea {
+            id: drop
+            anchors.fill: parent
+            keys: ["text/uri-list"]
+            onDropped: d => {
+                const add = d.urls.map(u => decodeURIComponent(String(u).replace(/^file:\/\//, ""))).filter(p => p.startsWith("/"))
+                chat.files = chat.files.concat(add.filter(p => !chat.files.includes(p))).slice(0, 5)
+                d.accept(); Sfx.tap(); input.forceActiveFocus()
+            }
+        }
+        Rectangle {     // drop hint
+            visible: drop.containsDrag
+            anchors.fill: parent; radius: 18 * chat.s
+            color: "#D9EEF8FE"; border.color: Theme.sky; border.width: 3 * chat.s
+            Text { anchors.centerIn: parent; text: "여기에 놓으면 첨부돼요"; color: Theme.skyDeep; font.family: Theme.font; font.pixelSize: 22 * chat.s; font.weight: Font.Black }
+        }
+
         // ---------- input ----------
         Rectangle {
             id: bar
@@ -181,7 +260,7 @@ PanelWindow {
                 Text {
                     x: 16 * chat.s; anchors.verticalCenter: parent.verticalCenter
                     visible: !input.text && !input.preeditText
-                    text: Arona.ready ? "아로나에게 말 걸기…" : "설정 → 아로나에서 API 키를 넣어 주세요"
+                    text: !Arona.ready ? "설정 → 아로나에서 API 키를 넣어 주세요" : chat.files.length ? "파일에 대해 물어보기… (그냥 Enter도 돼요)" : Arona.name + "에게 말 걸기… (파일을 끌어다 놓을 수 있어요)"
                     color: "#9AB0C2"; font.family: Theme.font; font.pixelSize: 16 * chat.s
                 }
             }
@@ -194,7 +273,7 @@ PanelWindow {
                     anchors.centerIn: parent; width: 22 * chat.s; height: width
                     source: Theme.assets + "icons/send.svg"; sourceSize.width: width * 2; sourceSize.height: height * 2
                 }
-                MouseArea { id: sendMa; anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: chat.send() }
+                MouseArea { onPressedChanged: if (pressed) Sfx.tap(); id: sendMa; anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: chat.send() }
             }
         }
     }

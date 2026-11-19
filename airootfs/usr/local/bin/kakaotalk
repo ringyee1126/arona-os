@@ -15,6 +15,8 @@ if [[ -z $EXE ]]; then
   reg=$(mktemp --suffix=.reg)
   printf 'REGEDIT4\n\n[HKEY_CURRENT_USER\Software\Wine\Fonts\Replacements]\n"Gulim"="Noto Sans CJK KR"\n"GulimChe"="Noto Sans CJK KR"\n"Dotum"="Noto Sans CJK KR"\n"Batang"="Noto Sans CJK KR"\n"Malgun Gothic"="Noto Sans CJK KR"\n' > "$reg"
   wine regedit "$reg" >/dev/null 2>&1; rm -f "$reg"
+  # 받은 파일(md, zip, 사진…)을 이 OS의 기본 프로그램으로 연다: "Windows 프로그램이 없습니다" 경고 방지
+  command -v shittim-wine-open >/dev/null && shittim-wine-open --register
   wine "$tmp"; rm -f "$tmp"
   EXE=$(find_exe)
   [[ -n $EXE ]] || { notify-send -a 아로나 "카카오톡" "설치가 끝나지 않았어요. 다시 눌러 주세요."; exit 1; }

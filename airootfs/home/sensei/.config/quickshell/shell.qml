@@ -19,6 +19,21 @@ ShellRoot {
         function toggle(): void { Ui.settings("toggle") }
         function open(page: string): void { Ui.settings("open", page) }
     }
+    IpcHandler {   // 윈도우 키만 눌렀다 떼면 (hyprland.lua)
+        target: "menu"
+        function toggle(): void { Ui.menuOpen = !Ui.menuOpen }
+    }
+    Connections {
+        target: Ui
+        function onLauncherOpenChanged() { Sfx.play(Ui.launcherOpen ? "open" : "close") }
+        function onChatOpenChanged() { Sfx.play(Ui.chatOpen ? "open" : "close") }
+        function onMenuOpenChanged() { Sfx.play(Ui.menuOpen ? "open" : "close") }
+    }
+    Connections {
+        target: Arona
+        function onReplyTextChanged() { if (Arona.replyText) Sfx.play("receive") }
+        function onReplyErrorChanged() { if (Arona.replyError) Sfx.play("error") }
+    }
     IpcHandler {
         target: "chat"
         function toggle(): void { Ui.chatOpen = !Ui.chatOpen }

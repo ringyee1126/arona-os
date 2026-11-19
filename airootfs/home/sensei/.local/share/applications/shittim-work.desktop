@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=업무 시작하기 (블루 아카이브)
+Comment=Steam의 블루 아카이브를 바로 실행
+Exec=/home/sensei/.local/bin/shittim-work
+Icon=applications-games
+Categories=Game;

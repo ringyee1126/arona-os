@@ -67,7 +67,7 @@ Item {
             GradientStop { position: 0.65; color: "#00040E1E" }
         }
     }
-    MouseArea { anchors.fill: parent; onClicked: if (!v.login) v.openLogin() }
+    MouseArea { onPressedChanged: if (pressed) Sfx.tap(); anchors.fill: parent; onClicked: if (!v.login) v.openLogin() }
 
     // ---------- Arona: expression follows ctl.mood, hops when it changes ----------
     Item {

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# "업무 시작하기": Steam에 설치된 블루 아카이브를 실행한다.  shittim-work check = 설치 여부만 확인 (종료 코드)
+# shortcut: Steam 기본 라이브러리만 본다. 다른 드라이브에 설치하면 libraryfolders.vdf 를 읽도록 고친다.
+m=$(grep -lisE '"name"[[:space:]]+"(Blue Archive|블루 아카이브)' "$HOME"/.local/share/Steam/steamapps/appmanifest_*.acf 2>/dev/null | head -n1)
+[[ -n $m ]] || exit 1
+[[ ${1:-} == check ]] && exit 0
+id=${m##*appmanifest_}; exec steam "steam://rungameid/${id%.acf}"

@@ -1,0 +1,55 @@
+// Shittim OS boot splash (approved design: mockups/boot.html). All pieces are pre-rendered PNGs
+// (mockups/plymouth-parts.html) because Plymouth has no Korean font this early in boot.
+Window.SetBackgroundTopColor(0.008, 0.027, 0.059);
+Window.SetBackgroundBottomColor(0.008, 0.027, 0.059);
+W = Window.GetWidth();
+H = Window.GetHeight();
+s = H / 1200;
+fun scaled(name) { img = Image(name); return img.Scale(img.GetWidth() * s, img.GetHeight() * s); }
+fun center(sprite, img, y) { sprite.SetX(W / 2 - img.GetWidth() / 2); sprite.SetY(y * s - img.GetHeight() / 2); }
+
+bg = Sprite(Image("bg.png").Scale(W, H)); bg.SetZ(-100);
+
+ringOut = scaled("ring_out.png");  ro = Sprite(ringOut); center(ro, ringOut, 400);
+ringIn = scaled("ring_in.png");    ri = Sprite(ringIn);  center(ri, ringIn, 400);
+title = scaled("title.png");       ts = Sprite(title);   center(ts, title, 665);
+
+barBg = scaled("bar_bg.png");      bb = Sprite(barBg);   center(bb, barBg, 797);
+barFill = scaled("bar_fill.png");  bf = Sprite();        bf.SetX(bb.GetX()); bf.SetY(bb.GetY()); bf.SetZ(1);
+for (i = 0; i < 5; i++) status[i] = scaled("status" + i + ".png");
+st = Sprite(status[0]);            center(st, status[0], 856);
+done = scaled("done.png");         ds = Sprite(done);    center(ds, done, 815); ds.SetOpacity(0);
+
+angle = 0;
+t = 0;
+fun refresh() {
+    angle += 0.0175;                      // outer dashed ring: one turn every ~6 s
+    ro.SetImage(ringOut.Rotate(angle));
+    t += 0.045;                           // inner halo breathes
+    ri.SetOpacity(0.72 + 0.28 * Math.Sin(t));
+    fill();
+}
+Plymouth.SetRefreshFunction(refresh);
+
+// The bar fills by the clock (4.5 s, smooth) instead of by boot progress: this laptop boots and shuts down faster
+// than the cutscene, so the progress-driven bar jumped and was cut off. systemd holds the splash until it is full
+// (plymouth-quit.service.d / plymouth-poweroff.service.d / plymouth-reboot.service.d: shittim.conf).
+p = 0;
+fun fill() {
+    if (p >= 1) return;
+    p += 1 / (4.5 * 50);                  // refresh runs 50 times a second
+    if (p > 1) p = 1;
+    e = 1 - (1 - p) * (1 - p);            // ease out
+    w = Math.Int(barFill.GetWidth() * e);
+    if (w < 2) w = 2;
+    bf.SetImage(barFill.Scale(w, barFill.GetHeight()));
+    i = Math.Int(e * 5);
+    if (i > 4) i = 4;
+    st.SetImage(status[i]);
+}
+
+fun quit() {                              // "접속 승인" right before the desktop takes over
+    bb.SetOpacity(0); bf.SetOpacity(0); st.SetOpacity(0);
+    ds.SetOpacity(1);
+}
+Plymouth.SetQuitFunction(quit);

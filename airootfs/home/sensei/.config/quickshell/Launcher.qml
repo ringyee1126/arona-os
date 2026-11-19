@@ -140,7 +140,7 @@ PanelWindow {
         if (r.kind === "ask") { mode = "ask"; return }
         if (r.kind === "app") r.entry.execute()
         else if (r.kind === "web") Quickshell.execDetached(["chromium", "https://www.google.com/search?q=" + encodeURIComponent(q)])
-        else Quickshell.execDetached(["xdg-open", r.file.path])
+        else Quickshell.execDetached(["gio", "open", r.file.path])   // gio: goes by file name (.md), xdg-open only looks at the content
         Ui.launcherOpen = false
     }
     function extract(f) {
@@ -287,7 +287,7 @@ PanelWindow {
                             color: tabItem.on ? "white" : Theme.inkDim
                             font.family: Theme.font; font.pixelSize: 17 * ln.s; font.weight: Font.ExtraBold
                         }
-                        MouseArea { anchors.fill: parent; onClicked: { ln.tab = tabItem.modelData.id; ln.sel = 0; input.forceActiveFocus() } }
+                        MouseArea { onPressedChanged: if (pressed) Sfx.tap(); anchors.fill: parent; onClicked: { ln.tab = tabItem.modelData.id; ln.sel = 0; input.forceActiveFocus() } }
                     }
                 }
             }
@@ -358,6 +358,7 @@ PanelWindow {
                                     color: Theme.inkDim; font.family: Theme.font; font.pixelSize: 13 * ln.s; font.weight: Font.Bold
                                 }
                                 MouseArea {
+                                    onPressedChanged: if (pressed) Sfx.tap()
                                     anchors.fill: parent; hoverEnabled: true
                                     onEntered: ln.sel = row.modelData.idx
                                     onClicked: ln.activate(row.modelData)

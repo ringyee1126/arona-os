@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# 스크린샷: 파일로 저장 + 클립보드 복사 + 알림.  shittim-shot [region|full]
+dir="$(xdg-user-dir PICTURES)/스크린샷"; mkdir -p "$dir"
+f="$dir/$(date +%Y-%m-%d_%H-%M-%S).png"
+if [[ ${1:-region} == full ]]; then grim "$f"
+else g=$(slurp) || exit 0; grim -g "$g" "$f"; fi || { notify-send -a 아로나 "스크린샷" "찍지 못했어요."; exit 1; }
+wl-copy --type image/png < "$f"
+pw-play /usr/share/sounds/freedesktop/stereo/camera-shutter.oga 2>/dev/null &
+notify-send -a 아로나 -i "$f" "스크린샷 저장" "${f/#$HOME/\~}"

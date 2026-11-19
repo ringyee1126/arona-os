@@ -1,4 +1,5 @@
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Services.Pam
 import QtQuick
@@ -30,8 +31,15 @@ Scope {
         line = greeting()
         locked = true
     }
-    // after a shell reload while locked, the dialogue would be empty
-    Component.onCompleted: if (locked && line === "") line = greeting()
+    // First start after login: lock at once, before the desktop is ever drawn. (hyprland.lua's "ipc call lock lock"
+    // only arrives about a second later, which let the desktop flash before the lock screen.) The mark lives in
+    // /run/user/<uid>, so it is gone after a logout or reboot but survives shell reloads.
+    FileView { id: bootMark; path: Quickshell.env("XDG_RUNTIME_DIR") + "/shittim-locked-once"; blockLoading: true; printErrors: false }
+    Component.onCompleted: {
+        if (!locked && bootMark.text() === "") { bootMark.setText("1"); lock() }
+        // after a shell reload while locked, the dialogue would be empty
+        if (locked && line === "") line = greeting()
+    }
     function submit(pw) {
         if (busy || pw === "") return
         pending = pw

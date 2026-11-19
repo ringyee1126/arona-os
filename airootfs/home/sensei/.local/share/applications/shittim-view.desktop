@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=문서 보기
+Comment=마크다운(.md) 문서를 서식 있게 보기
+Exec=/home/sensei/.local/bin/shittim-view %f
+Icon=text-x-generic
+MimeType=text/markdown;text/x-markdown;
+Categories=Office;Viewer;

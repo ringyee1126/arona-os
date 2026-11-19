@@ -130,7 +130,7 @@ PanelWindow {
                             text: tile.hot ? "한 번 더 누르면\n" + tile.modelData.name : tile.modelData.name
                             color: tile.hot ? "white" : Theme.ink; font.weight: Font.Bold
                         }
-                        MouseArea { id: tileMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: menu.run(tile.modelData) }
+                        MouseArea { onPressedChanged: if (pressed) Sfx.tap(); id: tileMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: menu.run(tile.modelData) }
                     }
                 }
             }

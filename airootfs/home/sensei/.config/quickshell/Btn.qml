@@ -24,5 +24,5 @@ Item {
         text: b.text; color: b.primary ? Theme.ink : Theme.inkDim
         font.family: Theme.font; font.pixelSize: 17 * b.s; font.weight: Font.ExtraBold
     }
-    MouseArea { id: ma; anchors.fill: parent; onClicked: b.clicked() }
+    MouseArea { onPressedChanged: if (pressed) Sfx.tap(); id: ma; anchors.fill: parent; onClicked: b.clicked() }
 }

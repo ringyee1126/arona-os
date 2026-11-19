@@ -14,7 +14,7 @@ ShellRoot {
     }
     Connections {
         target: Ui
-        function onSettingsOpenChanged() { if (!Ui.settingsOpen) Qt.quit() }
+        function onSettingsOpenChanged() { if (!Ui.settingsOpen) { Sfx.play("close"); Qt.quit() } }
     }
-    Component.onCompleted: Ui.openSettings(Quickshell.env("SHITTIM_SETTINGS_PAGE") || "wifi")
+    Component.onCompleted: { Sfx.play("open"); Ui.openSettings(Quickshell.env("SHITTIM_SETTINGS_PAGE") || "wifi") }
 }

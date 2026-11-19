@@ -23,5 +23,5 @@ Item {
         color: "#F2506A"; border.color: "white"; border.width: 2 * b.s
         Text { anchors.centerIn: parent; text: b.badge; color: "white"; font.family: Theme.font; font.pixelSize: 12 * b.s; font.weight: Font.Black }
     }
-    MouseArea { anchors.fill: parent; onClicked: b.clicked() }
+    MouseArea { onPressedChanged: if (pressed) Sfx.tap(); anchors.fill: parent; onClicked: b.clicked() }
 }

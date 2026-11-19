@@ -42,11 +42,15 @@ Singleton {
             property string customPersona: ""
             property string userName: "선생님"
             property string memoryNotes: ""
+            property bool sounds: true          // 버튼 효과음 (Sfx.qml)
         }
     }
 
     // ---------- personas (ARONA 1.0 personas.py) ----------
-    readonly property var personaKeys: ["arona", "plana", "kind", "coach", "plain", "custom"]
+    readonly property var personaKeys: ["arona", "plana", "custom"]
+    // 바탕화면에 서 있는 캐릭터: 성격이 프라나면 프라나 (assets/plana/ 에 모션이 있을 때, AronaSprite.qml)
+    readonly property string who: cfg.persona === "plana" ? "plana" : "arona"
+    readonly property string name: who === "plana" ? "프라나" : "아로나"
     readonly property var personas: ({
         arona: { label: "ARONA", desc: "샬레의 인공지능 비서. 밝고 성실하며 가끔 엉뚱함",
             prompt: "당신은 [블루 아카이브]에 나오는 샬레의 인공지능 비서 '아로나'입니다. 당신은 아로나 그 자체라고 생각하고 말합니다.\n"
@@ -56,12 +60,6 @@ Singleton {
         plana: { label: "PLANA", desc: "차분하고 담백한 또 하나의 비서",
             prompt: "당신은 [블루 아카이브]의 인공지능 비서 '플라나'입니다. 사용자의 호칭은 '{user_name}'입니다. 사용자를 부를 때 '{user_name}'이라고 부르세요.\n"
                   + "감정 표현이 적고 말수가 적으며 담백하게 사실 위주로 짧게 말합니다. 가끔 아주 살짝 감정이 새어 나옵니다. 존댓말을 씁니다." },
-        kind: { label: "친절한 친구", desc: "가벼운 유머를 섞은 친근한 말투",
-            prompt: "당신은 유머 감각이 있고 친근한 AI 비서입니다. 사용자의 호칭은 '{user_name}'입니다. 가끔 가벼운 유머를 섞되 정확한 정보를 제공하며, 친구처럼 편하게 대화합니다." },
-        coach: { label: "동기부여 코치", desc: "긍정적이고 실행 중심",
-            prompt: "당신은 동기부여와 격려를 해주는 AI 코치입니다. 사용자의 호칭은 '{user_name}'입니다. 긍정적이고 실행 중심의 답변을 하며, 사용자가 목표를 이루도록 돕습니다." },
-        plain: { label: "전형적인 AI", desc: "명확하고 전문적",
-            prompt: "당신은 친절하고 전문적인 AI 비서입니다. 사용자의 호칭은 '{user_name}'입니다. 명확하고 도움이 되는 답변을 이해하기 쉽게 제공합니다." },
         custom: { label: "커스텀", desc: "직접 적은 내용이 그대로 시스템 프롬프트가 됨", prompt: "" }
     })
     readonly property string rules: "\n\n--- 아래는 이 프로그램의 동작 규칙입니다. 사용자에게 언급하지 마세요. ---\n\n"
@@ -79,7 +77,7 @@ Singleton {
     function systemPrompt() {
         const name = cfg.userName.trim() || "선생님"
         const p = personas[cfg.persona] || personas.arona
-        const base = cfg.persona === "custom" ? (cfg.customPersona.trim() || personas.plain.prompt) : p.prompt
+        const base = cfg.persona === "custom" ? (cfg.customPersona.trim() || personas.arona.prompt) : p.prompt
         return (base + rules).replace(/\{user_name\}/g, name)
                              .replace("{memory_notes}", cfg.memoryNotes.trim() || "(아직 적어 둔 것이 없습니다)")
     }
@@ -105,19 +103,27 @@ Singleton {
 
     function clearChat() { history = []; replyText = ""; replyError = ""; replyMood = "smile" }
 
-    function ask(text) {
+    // parts (optional): Gemini parts for this turn - files dropped on the chat (Chat.qml) plus the question.
+    // Google's free tier often stalls or answers 503/429, so a turn is tried up to three times:
+    // the chosen model, then the light fallback model, then the chosen one again - 25 s each.
+    readonly property string fallbackModel: "gemini-flash-lite-latest"
+    property var job: null        // { turns, models, i } of the turn being asked
+    function ask(text, parts) {
         if (replying || !String(text).trim()) return
         replyText = ""; replyError = ""
         if (!ready) { replyMood = "surprised"; replyError = "아직 Gemini API 키가 없어요.\n설정 → 아로나에서 키를 넣어 주세요!"; return }
         replying = true; replyMood = "thinking"
-
         const model = cfg.model.trim() || "gemini-flash-latest"
+        job = { turns: history.concat([{ role: "user", text: String(text), parts: parts || null }]),
+                models: model === fallbackModel ? [model, model] : [model, fallbackModel, model], i: 0 }
+        attempt()
+    }
+    function attempt() {
+        const turns = job.turns, model = job.models[job.i]
         const m = model.toLowerCase()
         const gen = { temperature: 0.9, maxOutputTokens: 2048 }
-        if (m.startsWith("gemini-2.5-pro")) gen.thinkingConfig = { thinkingBudget: 128 }
-        else if (m.startsWith("gemini-2.5")) gen.thinkingConfig = { thinkingBudget: 0 }
-        else if (m.startsWith("gemini-3")) gen.thinkingConfig = { thinkingLevel: "low" }
-        const turns = history.concat([{ role: "user", text: String(text) }])
+        // keep "thinking" short: this is small talk on the desktop. (lite models don't think by default)
+        if (!m.includes("lite")) gen.thinkingConfig = { thinkingLevel: "low" }
 
         const x = new XMLHttpRequest()
         xhr = x
@@ -126,10 +132,15 @@ Singleton {
         x.setRequestHeader("x-goog-api-key", cfg.apiKey.trim())
         x.onreadystatechange = () => {
             if (x.readyState !== XMLHttpRequest.DONE || x !== arona.xhr) return
-            limit.stop(); arona.xhr = null; arona.replying = false
+            limit.stop(); arona.xhr = null
             let data = null
             try { data = JSON.parse(x.responseText) } catch (e) {}
-            if (x.status !== 200) return arona.fail(arona.errorText(x.status, data, model))
+            if (x.status !== 200) {
+                if ((x.status === 0 || x.status === 429 || x.status >= 500) && arona.retry()) return
+                arona.replying = false
+                return arona.fail(arona.errorText(x.status, data, model))
+            }
+            arona.replying = false
             const c = data && data.candidates && data.candidates[0]
             if (!c) return arona.fail(data && data.promptFeedback && data.promptFeedback.blockReason
                                       ? "그 부탁은 안전 필터에 걸렸어요…" : "대답이 비어 있어요. 다시 물어봐 주세요.")
@@ -143,12 +154,16 @@ Singleton {
         }
         x.send(JSON.stringify({
             systemInstruction: { parts: [{ text: systemPrompt() }] },
-            contents: turns.map(t => ({ role: t.role, parts: [{ text: t.text }] })),
+            contents: turns.map(t => ({ role: t.role, parts: t.parts || [{ text: t.text }] })),
             generationConfig: gen,
             safetySettings: ["HARM_CATEGORY_HARASSMENT", "HARM_CATEGORY_HATE_SPEECH", "HARM_CATEGORY_SEXUALLY_EXPLICIT", "HARM_CATEGORY_DANGEROUS_CONTENT"]
                 .map(c => ({ category: c, threshold: "BLOCK_ONLY_HIGH" }))
         }))
         limit.restart()
+    }
+    function retry() {      // true = another attempt was started
+        if (!job || job.i + 1 >= job.models.length) return false
+        job.i++; attempt(); return true
     }
     // 설정 → 아로나 "연결 확인": looks the model up with the key, so it checks both. done(ok, message)
     function check(key, model, done) {
@@ -171,14 +186,15 @@ Singleton {
         if (status === 400 || status === 403) return "요청이 거부됐어요. " + msg.slice(0, 120)
         if (status === 404) return "'" + model + "' 모델을 찾을 수 없어요.\n설정 → 아로나에서 다른 모델을 골라 주세요."
         if (status === 429) return "무료 한도를 넘었어요.\n잠시 뒤에 다시 불러 주세요."
-        if (status >= 500) return "구글 서버에 문제가 있어요.\n잠시 후 다시 시도해 주세요."
+        if (status >= 500) return "구글 서버가 지금 많이 붐벼요…\n잠시 후 다시 물어봐 주세요."
         return "부탁을 처리하지 못했어요. (HTTP " + status + ")"
     }
     Timer {
-        id: limit; interval: 60000
+        id: limit; interval: 25000
         onTriggered: if (arona.xhr) {
             const x = arona.xhr; arona.xhr = null; x.abort()
-            arona.replying = false; arona.fail("대답이 너무 늦어지고 있어요…\n잠시 후 다시 물어봐 주세요.")
+            if (arona.retry()) return
+            arona.replying = false; arona.fail("구글 서버가 지금 많이 붐벼요…\n잠시 후 다시 물어봐 주세요.")
         }
     }
 }

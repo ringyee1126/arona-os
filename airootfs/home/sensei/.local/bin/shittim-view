@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# 문서 보기: 마크다운(.md) 파일을 서식 있게 보여 준다 (~/.config/quickshell/viewer.qml)
+[[ -f ${1:-} ]] || { notify-send -a 아로나 "문서 보기" "열 파일을 찾지 못했어요."; exit 1; }
+SHITTIM_VIEW_FILE=$(realpath -- "$1") exec quickshell -n -p "$HOME/.config/quickshell/viewer.qml"

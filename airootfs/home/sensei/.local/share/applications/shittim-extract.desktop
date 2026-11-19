@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=압축 풀기
+Comment=압축 파일을 더블클릭하면 그 자리에 바로 푼다 (안을 들여다보려면 우클릭 → 압축 관리자)
+Exec=file-roller --extract-here --notify %F
+Icon=org.gnome.FileRoller
+NoDisplay=true
+MimeType=application/zip;application/x-7z-compressed;application/vnd.rar;application/x-rar;application/x-tar;application/x-compressed-tar;application/x-bzip-compressed-tar;application/x-bzip2-compressed-tar;application/x-xz-compressed-tar;application/x-zstd-compressed-tar;application/gzip;application/x-bzip2;application/x-xz;application/zstd;application/x-alz;application/x-zip-compressed;

@@ -44,11 +44,13 @@ PanelWindow {
         AronaSprite { anchors.fill: parent; mood: arona.patted ? "happy" : Ui.chatOpen ? Arona.replyMood : "smile" }
         Timer { id: patTimer; interval: 2500; onTriggered: arona.patted = false }
         MouseArea {   // click her: MomoTalk chat opens next to her (Chat.qml)
+            onPressedChanged: if (pressed) Sfx.tap()
             x: parent.width * 0.2; y: parent.height * 0.28; width: parent.width * 0.6; height: parent.height * 0.42
             cursorShape: Qt.PointingHandCursor
             onClicked: Ui.chatOpen = !Ui.chatOpen
         }
         MouseArea {   // pat her head: she beams for a moment
+            onPressedChanged: if (pressed) Sfx.tap()
             x: parent.width * 0.25; y: parent.height * 0.1; width: parent.width * 0.5; height: parent.height * 0.18
             cursorShape: Qt.PointingHandCursor
             onClicked: {
@@ -63,8 +65,9 @@ PanelWindow {
         id: bubble
         property string text: Arona.greeting()
         property bool shown: true
-        anchors.right: arona.left; anchors.rightMargin: -150 * desk.s
-        y: 260 * desk.s
+        anchors.right: arona.left; anchors.rightMargin: -185 * desk.s
+        // 얼굴 높이(스프라이트 위에서 22%)에 맞춘다. arona.y 대신 식을 써서 숨쉬기 움직임을 따라가지 않게 한다
+        y: parent.height - arona.height + 380 * desk.s + arona.height * 0.22 - height / 2
         width: label.width + 52 * desk.s
         height: label.implicitHeight + 44 * desk.s
         radius: 18 * desk.s; color: "white"
@@ -86,7 +89,7 @@ PanelWindow {
             wrapMode: Text.WordWrap
             color: Theme.ink; font.family: Theme.font; font.pixelSize: 21 * desk.s; lineHeight: 1.3
         }
-        MouseArea { anchors.fill: parent; onClicked: bubble.shown = false }
+        MouseArea { onPressedChanged: if (pressed) Sfx.tap(); anchors.fill: parent; onClicked: bubble.shown = false }
 
         Timer { id: hideTimer; interval: 15000; onTriggered: bubble.shown = false }
         Timer { interval: 3600000; running: true; repeat: true; onTriggered: Arona.say(Arona.greeting()) }
@@ -137,7 +140,7 @@ PanelWindow {
                         Text { width: parent.width; elide: Text.ElideRight; text: note.modelData.body || note.modelData.appName; color: Theme.inkDim; font.family: Theme.font; font.pixelSize: 15 * desk.s; textFormat: Text.PlainText }
                     }
                     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: "#F0E4E8" }
-                    MouseArea { anchors.fill: parent; onClicked: note.modelData.dismiss() }
+                    MouseArea { onPressedChanged: if (pressed) Sfx.tap(); anchors.fill: parent; onClicked: note.modelData.dismiss() }
                 }
             }
             Item {
@@ -181,7 +184,7 @@ PanelWindow {
                         color: task.modelData.done ? "#9AB0C2" : Theme.ink
                         font.family: Theme.font; font.pixelSize: 17 * desk.s; font.weight: Font.DemiBold
                     }
-                    MouseArea { anchors.fill: parent; onClicked: Tasks.toggle(task.index) }
+                    MouseArea { onPressedChanged: if (pressed) Sfx.tap(); anchors.fill: parent; onClicked: Tasks.toggle(task.index) }
                 }
             }
         }

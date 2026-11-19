@@ -1,8 +1,10 @@
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 import QtQuick
 
-// Bottom strip: app dock (drag / wheel to scroll when it overflows) and the big yellow search button.
+// Bottom strip: app dock (drag / wheel to scroll when it overflows), the Arona search button and the big
+// yellow "업무 시작하기" button.
 PanelWindow {
     id: dock
     readonly property real s: screen ? screen.height / 1200 : 1
@@ -12,7 +14,12 @@ PanelWindow {
     color: "transparent"
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.namespace: "shittim-dock"
-    mask: Region { item: box; Region { item: bigBtn } }
+    mask: Region { item: box; Region { item: bigBtn } Region { item: searchBtn } }
+
+    // "업무 시작하기" = 블루 아카이브 (~/.local/bin/shittim-work). 설치돼 있을 때만 눌린다; 20초마다 다시 확인.
+    property bool workReady: false
+    Process { id: workCheck; command: ["shittim-work", "check"]; onExited: code => dock.workReady = code === 0 }
+    Timer { interval: 20000; running: true; repeat: true; triggeredOnStart: true; onTriggered: workCheck.running = true }
 
     // name, icon file, command. An empty command means "not ready yet" and Arona says so.
     readonly property var apps: [
@@ -30,7 +37,8 @@ PanelWindow {
         { name: "사진", icon: "photos", cmd: ["sh", "-c", "thunar \"$(xdg-user-dir PICTURES)\""] },
         { name: "동영상", icon: "videos", cmd: ["sh", "-c", "thunar \"$(xdg-user-dir VIDEOS)\""] },
         { name: "메모장", icon: "notes", cmd: ["mousepad"] },
-        { name: "캡처", icon: "capture", cmd: ["sh", "-c", "grim -g \"$(slurp)\" - | wl-copy"] },
+        { name: "캡처", icon: "capture", cmd: ["shittim-shot", "region"] },   // ~/사진/스크린샷 + 클립보드
+        { name: "Steam", icon: "steam", cmd: ["steam"] },
         { name: "압축", icon: "archive", cmd: ["file-roller"] }
     ]
     function launch(app) {
@@ -44,7 +52,7 @@ PanelWindow {
         id: box
         x: 40 * dock.s
         anchors.bottom: parent.bottom; anchors.bottomMargin: 30 * dock.s
-        width: Math.min(1000 * dock.s, list.contentWidth + 36 * dock.s)
+        width: Math.min(dock.width - 80 * dock.s - (330 + 150 + 36) * dock.s, 1000 * dock.s, list.contentWidth + 36 * dock.s)
         height: 152 * dock.s
         radius: 18 * dock.s
         color: "#99FFFFFF"; border.color: "#66FFFFFF"; border.width: 1
@@ -79,7 +87,7 @@ PanelWindow {
                     text: cell.modelData.name; color: Theme.ink
                     font.family: Theme.font; font.pixelSize: 15 * dock.s; font.weight: Font.Bold
                 }
-                MouseArea { id: ma; anchors.fill: parent; onClicked: dock.launch(cell.modelData) }
+                MouseArea { onPressedChanged: if (pressed) Sfx.tap(); id: ma; anchors.fill: parent; onClicked: dock.launch(cell.modelData) }
             }
             WheelHandler { onWheel: e => list.flick((e.angleDelta.y || e.angleDelta.x) * 12, 0) }
         }
@@ -110,40 +118,58 @@ PanelWindow {
         }
     }
 
-    // ---------- big yellow button: Arona search ----------
+    // ---------- Arona search: small button left of the big one ----------
+    Item {
+        id: searchBtn
+        anchors { right: bigBtn.left; bottom: parent.bottom; rightMargin: 18 * dock.s; bottomMargin: 30 * dock.s }
+        width: 150 * dock.s; height: 140 * dock.s
+        scale: searchMa.pressed ? 0.95 : 1
+        Behavior on scale { NumberAnimation { duration: 90 } }
+        SkewRect { anchors.fill: parent; anchors.topMargin: 6 * dock.s; radius: 18 * dock.s; color: "#C7D6E2" }
+        SkewRect { anchors.fill: parent; anchors.bottomMargin: 6 * dock.s; radius: 18 * dock.s; color: "#F4F9FC"; border.color: "#A6FFFFFF"; border.width: 3 * dock.s }
+        Column {
+            anchors.centerIn: parent; anchors.verticalCenterOffset: -3 * dock.s
+            spacing: 6 * dock.s
+            Image {
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: 46 * dock.s; height: width
+                source: Theme.assets + "icons/search.svg"
+                sourceSize.width: width * 2; sourceSize.height: height * 2
+            }
+            Text { anchors.horizontalCenter: parent.horizontalCenter; text: "아로나 검색"; color: Theme.ink; font.family: Theme.font; font.pixelSize: 17 * dock.s; font.weight: Font.Black }
+        }
+        MouseArea { id: searchMa; anchors.fill: parent; onPressedChanged: if (pressed) Sfx.tap(); onClicked: Ui.launcherOpen = true }
+    }
+
+    // ---------- big yellow button: 업무 시작하기 (블루 아카이브). Grey and inert until the game is installed ----------
     Item {
         id: bigBtn
         anchors { right: parent.right; bottom: parent.bottom; rightMargin: 40 * dock.s; bottomMargin: 30 * dock.s }
         width: 330 * dock.s; height: 140 * dock.s
-        scale: bigMa.pressed ? 0.96 : 1
+        scale: bigMa.pressed && dock.workReady ? 0.96 : 1
+        opacity: dock.workReady ? 1 : 0.75
         Behavior on scale { NumberAnimation { duration: 90 } }
 
-        SkewRect { anchors.fill: parent; anchors.topMargin: 6 * dock.s; radius: 18 * dock.s; color: "#C99400" }
+        SkewRect { anchors.fill: parent; anchors.topMargin: 6 * dock.s; radius: 18 * dock.s; color: dock.workReady ? "#C99400" : "#9FB2C2" }
         SkewRect {
             anchors.fill: parent; anchors.bottomMargin: 6 * dock.s
             radius: 18 * dock.s; border.color: "#A6FFFFFF"; border.width: 3 * dock.s
             gradient: Gradient {
                 orientation: Gradient.Horizontal
-                GradientStop { position: 0; color: "#FFE97A" }
-                GradientStop { position: 0.6; color: Theme.halo }
-                GradientStop { position: 1; color: "#F0B400" }
+                GradientStop { position: 0; color: dock.workReady ? "#FFE97A" : "#E6EEF4" }
+                GradientStop { position: 0.6; color: dock.workReady ? Theme.halo : "#D5E0E9" }
+                GradientStop { position: 1; color: dock.workReady ? "#F0B400" : "#C7D6E2" }
             }
         }
-        Row {
+        Column {
             anchors.centerIn: parent; anchors.verticalCenterOffset: -3 * dock.s
-            spacing: 18 * dock.s
-            Image {
-                anchors.verticalCenter: parent.verticalCenter
-                width: 60 * dock.s; height: width
-                source: Theme.assets + "icons/search.svg"
-                sourceSize.width: width * 2; sourceSize.height: height * 2
-            }
-            Column {
-                anchors.verticalCenter: parent.verticalCenter
-                Text { text: "아로나 검색"; color: Theme.ink; font.family: Theme.font; font.pixelSize: 34 * dock.s; font.weight: Font.Black; font.italic: true }
-                Text { text: "앱 실행 · 파일 찾기 · 부탁하기"; color: "#6B5200"; font.family: Theme.font; font.pixelSize: 16 * dock.s; font.weight: Font.Bold }
-            }
+            Text { anchors.horizontalCenter: parent.horizontalCenter; text: "업무 시작하기"; color: dock.workReady ? Theme.ink : Theme.inkDim; font.family: Theme.font; font.pixelSize: 34 * dock.s; font.weight: Font.Black; font.italic: true }
+            Text { anchors.horizontalCenter: parent.horizontalCenter; text: dock.workReady ? "블루 아카이브 실행" : "블루 아카이브가 설치되면 열려요"; color: dock.workReady ? "#6B5200" : Theme.inkDim; font.family: Theme.font; font.pixelSize: 16 * dock.s; font.weight: Font.Bold }
         }
-        MouseArea { id: bigMa; anchors.fill: parent; onClicked: Ui.launcherOpen = true }
+        MouseArea {
+            id: bigMa; anchors.fill: parent; enabled: dock.workReady
+            onPressedChanged: if (pressed) Sfx.tap()
+            onClicked: Quickshell.execDetached(["shittim-work"])
+        }
     }
 }

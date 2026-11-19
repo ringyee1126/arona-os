@@ -63,8 +63,8 @@ PanelWindow {
             color: Theme.ink; border.color: "white"; border.width: 4 * bar.s
             Column {
                 anchors.centerIn: parent
-                Text { anchors.horizontalCenter: parent.horizontalCenter; text: "SCHALE"; color: "#8FD0F2"; font.family: Theme.font; font.pixelSize: 13 * bar.s; font.weight: Font.Bold; font.letterSpacing: 1.3 * bar.s }
-                Text { anchors.horizontalCenter: parent.horizontalCenter; text: "D+" + Theme.dayCount; color: "white"; font.family: Theme.font; font.pixelSize: 26 * bar.s; font.weight: Font.Black; font.italic: true }
+                Text { anchors.horizontalCenter: parent.horizontalCenter; text: "일월화수목금토".charAt(Theme.now.getDay()) + "요일"; color: "#8FD0F2"; font.family: Theme.font; font.pixelSize: 13 * bar.s; font.weight: Font.Bold; font.letterSpacing: 1.3 * bar.s }
+                Text { anchors.horizontalCenter: parent.horizontalCenter; text: Qt.formatDate(Theme.now, "M/d"); color: "white"; font.family: Theme.font; font.pixelSize: 24 * bar.s; font.weight: Font.Black; font.italic: true }
             }
         }
     }
@@ -78,12 +78,12 @@ PanelWindow {
 
         Pill {
             s: bar.s; icon: "wifi"; text: bar.ssid || "연결 안 됨"
-            MouseArea { anchors.fill: parent; onClicked: Ui.settings("open", "wifi") }
+            MouseArea { onPressedChanged: if (pressed) Sfx.tap(); anchors.fill: parent; onClicked: Ui.settings("open", "wifi") }
         }
         Pill {
             s: bar.s; icon: "volume"
             text: bar.sink && bar.sink.audio ? Math.round(bar.sink.audio.volume * 100) : "–"
-            MouseArea { anchors.fill: parent; onClicked: Ui.settings("open", "sound") }
+            MouseArea { onPressedChanged: if (pressed) Sfx.tap(); anchors.fill: parent; onClicked: Ui.settings("open", "sound") }
             WheelHandler {
                 onWheel: e => {
                     if (!bar.sink || !bar.sink.audio) return

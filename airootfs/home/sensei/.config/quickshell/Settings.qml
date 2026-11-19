@@ -81,7 +81,7 @@ FloatingWindow {
             x: tg.on ? tg.width - width - 4 * Theme.scale : 4 * Theme.scale
             Behavior on x { NumberAnimation { duration: 150; easing.type: Easing.OutCubic } }
         }
-        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: tg.toggled() }
+        MouseArea { onPressedChanged: if (pressed) Sfx.tap(); anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: tg.toggled() }
     }
     component Field: Rectangle {
         id: fd
@@ -202,6 +202,7 @@ FloatingWindow {
                     Rectangle { visible: tb.modelData.a === "max"; anchors.centerIn: parent; width: 11 * win.s; height: width; radius: 2 * win.s; color: "transparent"; border.color: "white"; border.width: 2.2 * win.s }
                     XMark { visible: tb.modelData.a === "close"; anchors.centerIn: parent; size: 10 * win.s; thickness: 2.6 * win.s }
                     MouseArea {
+                        onPressedChanged: if (pressed) Sfx.tap()
                         id: tbMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                         onClicked: tb.modelData.a === "max" ? (win.maximized = !win.maximized) : (Ui.settingsOpen = false)
                     }
@@ -256,7 +257,7 @@ FloatingWindow {
                             x: 54 * win.s; anchors.verticalCenter: parent.verticalCenter
                             text: nav.modelData.name; color: nav.on ? Theme.ink : Theme.inkDim; font.weight: Font.Bold
                         }
-                        MouseArea { id: navMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Ui.settingsPage = nav.modelData.key }
+                        MouseArea { onPressedChanged: if (pressed) Sfx.tap(); id: navMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Ui.settingsPage = nav.modelData.key }
                     }
                 }
             }
@@ -391,6 +392,7 @@ FloatingWindow {
                                 source: Theme.assets + "icons/lock.svg"; sourceSize.width: width * 2; sourceSize.height: height * 2
                             }
                             MouseArea {
+                                onPressedChanged: if (pressed) Sfx.tap()
                                 anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                                 onClicked: {
                                     wp.error = ""
@@ -494,7 +496,7 @@ FloatingWindow {
                                     visible: bd.d.paired && !bd.d.connected
                                     anchors.verticalCenter: parent.verticalCenter
                                     text: "삭제"; color: Theme.inkDim; font.pixelSize: 14 * win.s; font.underline: forgetMa.containsMouse
-                                    MouseArea { id: forgetMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: bd.d.forget() }
+                                    MouseArea { onPressedChanged: if (pressed) Sfx.tap(); id: forgetMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: bd.d.forget() }
                                 }
                                 Btn {
                                     s: win.s
@@ -580,12 +582,20 @@ FloatingWindow {
                             }
                             T { x: 34 * win.s; anchors.verticalCenter: parent.verticalCenter; width: parent.width - x; elide: Text.ElideRight; text: win.nodeName(opt.modelData); font.weight: opt.on ? Font.Bold : Font.Normal }
                             MouseArea {
+                                onPressedChanged: if (pressed) Sfx.tap()
                                 anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                                 onClicked: dev.modelData.out ? (Pipewire.preferredDefaultAudioSink = opt.modelData) : (Pipewire.preferredDefaultAudioSource = opt.modelData)
                             }
                         }
                     }
                     Sub { visible: dev.ok && dev.modelData.list.length <= 1; text: dev.ok ? win.nodeName(dev.node) : "" }
+                }
+            }
+            Card {
+                Item {
+                    width: parent.width; height: 40 * win.s
+                    T { anchors.verticalCenter: parent.verticalCenter; text: "버튼 효과음"; font.pixelSize: 18 * win.s; font.weight: Font.Bold }
+                    Toggle { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; on: Arona.settings.sounds; onToggled: Arona.settings.sounds = !Arona.settings.sounds }
                 }
             }
             Item {
@@ -658,10 +668,10 @@ FloatingWindow {
             property string chk: ""          // "" | "busy" | "ok" | error message
             property string toast: ""
             readonly property var models: [
+                // "-latest" 별칭만 쓴다: 번호가 붙은 모델(2.5 등)은 구글이 종료하면 404가 난다
                 { id: "gemini-flash-latest", label: "Gemini Flash Latest — 최신 Flash 자동 추적 (추천)" },
-                { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash — 빠르고 안정적" },
-                { id: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash-Lite — 더 가볍고 빠름" },
-                { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro — 더 똑똑하지만 느리고 무료 한도가 적음" }
+                { id: "gemini-flash-lite-latest", label: "Gemini Flash-Lite Latest — 더 가볍고 빠름, 덜 붐빔" },
+                { id: "gemini-pro-latest", label: "Gemini Pro Latest — 더 똑똑하지만 느리고 무료 한도가 적음" }
             ]
             function modelLabel(id) { const m = models.find(x => x.id === id); return m ? m.label : id }
             function say(t) { toast = t; toastTimer.restart() }
@@ -740,7 +750,7 @@ FloatingWindow {
                         color: "#F7FBFE"; border.width: 2 * win.s; border.color: ap.picking ? Theme.sky : "#CBE4F3"
                         T { x: 16 * win.s; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 60 * win.s; elide: Text.ElideRight; text: ap.modelLabel(ap.model) }
                         T { anchors.right: parent.right; anchors.rightMargin: 16 * win.s; anchors.verticalCenter: parent.verticalCenter; text: ap.picking ? "▴" : "▾"; color: Theme.sky }
-                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: ap.picking = !ap.picking }
+                        MouseArea { onPressedChanged: if (pressed) Sfx.tap(); anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: ap.picking = !ap.picking }
                     }
                 }
                 Column {
@@ -759,7 +769,7 @@ FloatingWindow {
                                 font.weight: ap.model === mo.modelData.id ? Font.Bold : Font.Normal
                                 color: ap.model === mo.modelData.id ? Theme.skyDeep : Theme.ink
                             }
-                            MouseArea { id: moMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { ap.model = mo.modelData.id; ap.picking = false; ap.chk = "" } }
+                            MouseArea { onPressedChanged: if (pressed) Sfx.tap(); id: moMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { ap.model = mo.modelData.id; ap.picking = false; ap.chk = "" } }
                         }
                     }
                 }
@@ -787,7 +797,7 @@ FloatingWindow {
                                 T { text: Arona.personas[pc.modelData].label; font.weight: Font.Bold }
                                 Sub { width: parent.width; elide: Text.ElideRight; text: Arona.personas[pc.modelData].desc; font.pixelSize: 13 * win.s }
                             }
-                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: ap.persona = pc.modelData }
+                            MouseArea { onPressedChanged: if (pressed) Sfx.tap(); anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: ap.persona = pc.modelData }
                         }
                     }
                 }
@@ -859,13 +869,13 @@ FloatingWindow {
                                 text: task.modelData.text; font.strikeout: task.modelData.done
                                 color: task.modelData.done ? "#9AB0C2" : Theme.ink; font.weight: Font.DemiBold
                             }
-                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Tasks.toggle(task.index) }
+                            MouseArea { onPressedChanged: if (pressed) Sfx.tap(); anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Tasks.toggle(task.index) }
                             Rectangle {
                                 anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
                                 width: 30 * win.s; height: width; radius: width / 2
                                 color: delMa.containsMouse ? "#FFE3E8" : "transparent"
                                 XMark { anchors.centerIn: parent; size: 10 * win.s; thickness: 2.2 * win.s; color: delMa.containsMouse ? "#E0475F" : "#9AB0C2" }
-                                MouseArea { id: delMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Tasks.remove(task.index) }
+                                MouseArea { onPressedChanged: if (pressed) Sfx.tap(); id: delMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Tasks.remove(task.index) }
                             }
                         }
                     }

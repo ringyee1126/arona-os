@@ -1,0 +1,14 @@
+# 2026-11-19 노트북에서 추가한 패키지 (이유 한 줄씩)
+steam                 # 블루 아카이브(업무 시작하기)
+lib32-vulkan-radeon   # Steam/Proton 32비트 Vulkan (Radeon 840M)
+gamemode              # 게임 실행 중 CPU 성능 모드
+lib32-gamemode        # 위와 같음, 32비트 게임용
+fuzzel                # Super+V 클립보드 기록 목록
+udiskie               # USB 메모리 자동 마운트 (Windows처럼 꽂으면 바로)
+tumbler               # 파일 관리자의 사진 미리보기(썸네일)
+ffmpegthumbnailer     # 동영상 썸네일
+gnome-calculator      # 계산기
+mission-center        # 작업 관리자
+polkit-gnome          # 관리자 권한 비밀번호 창
+cups                  # 인쇄
+system-config-printer # 프린터 추가 화면

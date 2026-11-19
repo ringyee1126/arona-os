@@ -134,7 +134,8 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
 - Alt+Tab: `Switcher.qml` 창 목록(미리보기, 최근 사용 순). Alt+Tab/Alt+Shift+Tab = `ipc call switcher next/prev`, 마우스로 고르기, Alt+Esc·바깥 클릭 = 취소.
   Alt를 뗀 것은 hyprland.lua의 타이머(`hl.is_key_down("Alt_L")`, 40ms)가 보고 `commit` 한다. release 단축키는 그 사이에 다른
   단축키(Alt+Tab)가 눌리면 Hyprland가 실행하지 않아서 쓸 수 없다. 시험: `hyprctl dispatch 'hl.dsp.exec_cmd((function() shittim_switcher("next")() return "true" end)())'`
-- Wine/Proton 트레이 창(explorer.exe, 제목 없음)은 창 규칙 `wine-tray`로 `special:winetray`에 보낸다 (블루 아카이브·카카오톡 공통).
+- Wine 트레이 창(explorer.exe, 제목 없음, 160x20)은 창 규칙 `wine-tray`로 `special:winetray`에 보낸다. Proton 게임(블루 아카이브의 넥슨)은
+  트레이 창 class가 `steam_app_<id>`라서 `window.open` 핸들러가 제목 없음 + 160x20을 보고 같은 곳으로 옮긴다. 규칙은 새로 뜨는 창에만 먹는다.
 - pacman "키링을 쓸 수 없음": 설치 USB의 `/etc/systemd/system/etc-pacman.d-gnupg.mount`(tmpfs)가 설치된 시스템에 남아
   다시 시작할 때마다 열쇠고리가 비워졌다. `tools/fix-speaker.sh`가 그 유닛을 지우고 `pacman-key --init/--populate` 한다
   (설치 스크립트 `shittim-install`에도 반영).

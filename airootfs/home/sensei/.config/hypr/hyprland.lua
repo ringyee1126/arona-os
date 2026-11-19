@@ -38,7 +38,7 @@ hl.config({
         col = { active_border = "rgb(2fa8e1)", inactive_border = "rgba(ffffff40)" },
         -- Windows처럼: 창 테두리를 잡고 끌어 크기 조절, 끌다가 화면/다른 창 가장자리에 붙음
         resize_on_border = true, extend_border_grab_area = 14, hover_icon_on_border = true,
-        snap = { enabled = true },
+        snap = { enabled = true, window_gap = 6, monitor_gap = 6 },   -- 6 = 아래 창 붙이기의 STICK
     },
     decoration = { rounding = 10 },
     -- 한/영 키가 오른쪽 Alt로 들어오는 자판에서도 항상 Hangul 키로 보낸다. Alt로 들어오면 fcitx5가 키를 뗄 때에야
@@ -72,11 +72,18 @@ hl.window_rule({ name = "windows-like-float", match = { class = ".*" }, float = 
 -- Title bar with □ ✕ on every app window (mockups/windows.html ④): the hyprbars plugin. build.sh compiles it;
 -- a pacman hook (shittim-hyprbars-rebuild) recompiles it whenever Hyprland is updated.
 hl.plugin.load("/usr/lib/hyprland-plugins/hyprbars.so")
+-- 제목 표시줄을 직접 그려서 hyprbars 를 안 쓰는 앱 (창 붙이기도 이 표를 본다)
+local BAR, NO_BAR, SETTINGS = 38, { "discord", "code", "code-oss", "org.gnome.FileRoller", "org.pulseaudio.pavucontrol", "org.gnome.Evince" }, "설정 · 싯딤의 상자"
+local function has_bar(w)
+    if not hl.plugin.hyprbars or w.title == SETTINGS then return false end
+    for _, c in ipairs(NO_BAR) do if w.class == c then return false end end
+    return true
+end
 if hl.plugin.hyprbars then
     local maximize = [[hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" })']]
     hl.config({ plugin = { hyprbars = {
         bar_color = "rgb(1e3a52)", ["col.text"] = "rgb(ffffff)", inactive_button_color = "rgb(3d5a74)",
-        bar_height = 38, bar_padding = 14, bar_button_padding = 8, bar_precedence_over_border = true,
+        bar_height = BAR, bar_padding = 14, bar_button_padding = 8, bar_precedence_over_border = true,
         bar_text_font = "Pretendard Variable", bar_text_size = 12, bar_text_weight = "bold", bar_text_align = "left",
         on_double_click = maximize,
     } } })
@@ -87,7 +94,7 @@ if hl.plugin.hyprbars then
     -- apps that draw their own buttons (Chromium's tab strip, Discord, VS Code, GTK4 apps, KakaoTalk) and dialogs keep
     -- only theirs. Chromium app windows (chrome-*, e.g. the Claude app) draw none, so they do get the bar.
     hl.window_rule({ name = "hyprbars-own-buttons", ["hyprbars:no_bar"] = true,
-        match = { class = "^(discord|code|code-oss|org\\.gnome\\.FileRoller|org\\.pulseaudio\\.pavucontrol|org\\.gnome\\.Evince)$" } })
+        match = { class = "^(" .. table.concat(NO_BAR, "|"):gsub("%.", "\\.") .. ")$" } })
     hl.window_rule({ name = "hyprbars-no-settings", ["hyprbars:no_bar"] = true, match = { title = "^설정 · 싯딤의 상자$" } })
 end
 
@@ -127,7 +134,7 @@ local function zone_box(zone, m)
 end
 local snapped = {}     -- 붙이기 전의 창 크기 (창 주소 → {w, h}): 붙인 창을 다시 끌어내면 이 크기로 돌아간다
 function shittim_snap(zone)   -- 전역: hyprctl로 시험할 수 있게
-    local w, m = hl.get_active_window(), hl.get_active_monitor()
+    local w, m = hl.get_active_window(), hl.get_monitor_at_cursor() or hl.get_active_monitor()
     if not w or not m then return end
     if (w.fullscreen or 0) ~= 0 then hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" })) end
     if zone == "top" then
@@ -136,15 +143,18 @@ function shittim_snap(zone)   -- 전역: hyprctl로 시험할 수 있게
     end
     snapped[w.address] = snapped[w.address] or { w = w.size.x, h = w.size.y }
     local x, y, bw, bh = zone_box(zone, m)
-    hl.dispatch(hl.dsp.window.resize({ x = bw, y = bh }))
-    hl.dispatch(hl.dsp.window.move({ x = x, y = y }))
+    local bar = has_bar(w) and BAR or 0      -- 제목 표시줄은 창 위쪽에 따로 붙는다: 그만큼 내려서 상단 바 밑으로 안 들어가게
+    hl.dispatch(hl.dsp.window.resize({ x = bw, y = bh - bar }))
+    hl.dispatch(hl.dsp.window.move({ x = x, y = y + bar }))
 end
 local function half(right) return function() shittim_snap(right and "right" or "left") end end   -- Super + ←/→
 
 -- 창을 끌다가 마우스가 화면 가장자리에 닿은 채로 놓으면 그 자리에 붙인다: 왼쪽/오른쪽 = 반쪽, 위 = 최대화, 모서리 = 1/4.
 -- 끄는 동안에는 놓으면 갈 자리를 미리 보여 준다 (SnapPreview.qml).
--- 끌기 시작/끝 신호가 따로 없어서: 왼쪽 버튼을 누를 때 창 위치를 적어 두고, 그 뒤로 위치가 달라졌으면 끄는 중으로 본다.
-local press, drag_watch = nil, nil
+-- 마우스 버튼 신호는 쓸 수 없다: 제목 표시줄(hyprbars)이 누름/뗌을 먼저 삼켜서 단축키까지 오지 않는다.
+-- 그래서 50ms마다 창과 마우스 위치만 본다. 창이 마우스와 같이 움직이면 끄는 중이고,
+-- 그 뒤 마우스만 움직이고 창은 그대로면 놓은 것이다 (놓고 마우스를 조금 움직이는 순간 붙는다).
+local STICK = 6        -- general.snap 이 창을 다른 창·화면 끝에 붙들어 두는 거리: 그동안은 끄는 중에도 창이 안 움직인다
 local function zone_at(c, m)
     local C = 60                                    -- 모서리로 치는 범위
     local l, r = c.x <= m.x + 1, c.x >= m.x + m.width - 2
@@ -162,39 +172,38 @@ local function preview(zone, m)
     local x, y, bw, bh = zone_box(zone, m)
     hl.dispatch(hl.dsp.exec_cmd(string.format("quickshell ipc call snap box %d %d %d %d", x, y, bw, bh)))
 end
-local function drag_end()
-    if drag_watch then drag_watch:set_enabled(false) end
-    if press and press.zone then preview(nil) end
-    press = nil
+local drag, last = nil, nil     -- drag = 끄는 중인 창 {zone, cx, cy(창이 마지막으로 움직였을 때의 마우스)},  last = 직전 틱
+local function drop(snap)
+    local d = drag
+    drag = nil
+    if not (d and d.zone) then return end
+    preview(nil)
+    if snap then shittim_snap(d.zone) end
 end
-drag_watch = hl.timer(function()
-    local p, w, c, m = press, hl.get_active_window(), hl.get_cursor_pos(), hl.get_monitor_at_cursor()
-    if not (p and w and c and m) or w.address ~= p.address or not w.floating then return drag_end() end
-    p.ticks = p.ticks + 1
-    if p.ticks > 1200 then return drag_end() end                 -- 버튼을 뗀 신호를 놓쳤을 때 (1분)
-    if not p.dragging then
-        if w.at.x == p.x and w.at.y == p.y then return end        -- 아직 안 끌었다
-        p.dragging = true
-        local o = snapped[w.address]                              -- 붙여 둔 창을 끌어냈다: 원래 크기로
-        if o and (w.fullscreen or 0) == 0 then hl.dispatch(hl.dsp.window.resize({ x = o.w, y = o.h })) end
-        snapped[w.address] = nil
-    end
-    local z = zone_at(c, m)
-    if z ~= p.zone then p.zone = z; preview(z, m) end
+hl.timer(function()
+    local w, c, l = hl.get_active_window(), hl.get_cursor_pos(), last
+    last = (w and c and w.floating) and { a = w.address, x = w.at.x, y = w.at.y, w = w.size.x, h = w.size.y, cx = c.x, cy = c.y } or nil
+    local n = last
+    if not (n and l) or n.a ~= l.a then return drop(false) end
+    local dx, dy, dcx, dcy = n.x - l.x, n.y - l.y, n.cx - l.cx, n.cy - l.cy
+    local m = hl.get_monitor_at_cursor()
+    local z = m and zone_at(c, m)
+    -- 끄는 중: 창이 크기는 그대로인 채 마우스가 간 만큼 움직였다 (크기 조절·붙이기 애니메이션은 여기에 안 걸린다)
+    if (dx ~= 0 or dy ~= 0) and n.w == l.w and n.h == l.h and (dcx ~= 0 or dcy ~= 0)
+       and math.abs(dx - dcx) <= STICK * 4 and math.abs(dy - dcy) <= STICK * 4 then
+        if not drag then
+            drag = {}
+            local o = snapped[n.a]                                -- 붙여 둔 창을 끌어냈다: 원래 크기로
+            if o and (w.fullscreen or 0) == 0 then hl.dispatch(hl.dsp.window.resize({ x = o.w, y = o.h })) end
+            snapped[n.a] = nil
+        end
+        drag.cx, drag.cy = n.cx, n.cy
+    elseif not drag then return
+    elseif math.abs(n.cx - drag.cx) > STICK * 2 + 2 or math.abs(n.cy - drag.cy) > STICK * 2 + 2 then
+        return drop(true)                                         -- 마우스만 움직였다 = 놓았다
+    elseif not z then return end                                  -- 놓은 뒤 가장자리를 벗어나는 중일 수 있다: 자리는 그대로
+    if z ~= drag.zone then drag.zone = z; preview(z, m) end
 end, { timeout = 50, type = "repeat" })
-drag_watch:set_enabled(false)
-hl.bind("mouse:272", function()
-    local w = hl.get_active_window()
-    if not w then return end
-    press = { address = w.address, x = w.at.x, y = w.at.y, ticks = 0 }
-    drag_watch:set_enabled(true)
-end, { non_consuming = true })
-hl.bind("mouse:272", function()
-    local p, w, c, m = press, hl.get_active_window(), hl.get_cursor_pos(), hl.get_monitor_at_cursor()
-    local dragged = p and w and w.address == p.address and w.floating and (p.dragging or w.at.x ~= p.x or w.at.y ~= p.y)
-    drag_end()
-    if dragged and c and m then local z = zone_at(c, m); if z then shittim_snap(z) end end
-end, { release = true, non_consuming = true })
 hl.bind(mod .. " + left",  half(false))
 hl.bind(mod .. " + right", half(true))
 hl.bind(mod .. " + up", hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }))
@@ -219,6 +228,15 @@ hl.bind("ALT + Escape", hl.dsp.exec_cmd("quickshell ipc call switcher cancel")) 
 -- Wine/Proton이 띄우는 빈 "시스템 트레이" 창(explorer.exe, 160x20; 카카오톡·블루 아카이브를 켤 때)을 안 보이는 곳으로
 hl.window_rule({ name = "wine-tray", match = { class = "^explorer\\.exe$", title = "^$" },
                  workspace = "special:winetray silent", no_focus = true, no_initial_focus = true })
+-- Proton(Steam) 게임의 트레이 창은 class가 게임과 같아서(steam_app_<id>) 위 규칙에 안 걸린다: 크기(160x20)까지 보고 치운다
+hl.on("window.open", function(w)
+    if w.title == "" and w.class:match("^steam_app_%d+$") and w.size.x == 160 and w.size.y == 20 then
+        hl.dispatch(hl.dsp.window.move({ workspace = "special:winetray", follow = false, window = "address:" .. w.address }))
+    end
+end)
+-- 한/영 키는 Hyprland가 받아서 입력기를 직접 바꾼다. 앱을 거치면(특히 Wine 카카오톡: 글 칸에 입력기가 안 붙은 순간)
+-- 키가 입력기까지 못 가서 씹혔다. 오른쪽 Alt도 위의 kb_options 때문에 Hangul 로 들어온다.
+hl.bind("Hangul", hl.dsp.exec_cmd("fcitx5-remote -t"))
 -- Super + D = 바탕화면 보기 (빈 작업 공간 9로 갔다가 다시 누르면 돌아옴)
 hl.bind(mod .. " + D", function()
     local ws = hl.get_active_workspace()

@@ -105,6 +105,10 @@ btrfs -q subvolume delete /.snapshots
 mkdir /.snapshots && mount /.snapshots && chmod 750 /.snapshots
 sed -i 's/^TIMELINE_CREATE=.*/TIMELINE_CREATE="no"/; s/^NUMBER_LIMIT=.*/NUMBER_LIMIT="10"/' /etc/snapper/configs/root
 systemctl enable grub-btrfsd.service >/dev/null 2>&1 || true
+# 설치 USB용 설정(pacman 열쇠고리를 메모리에 두는 것)은 설치된 시스템에 남기지 않는다: 남으면 다시 시작할 때마다
+# 열쇠고리가 비워져 pacman이 "키를 가져올 수 없음"으로 실패한다.
+rm -f /etc/systemd/system/etc-pacman.d-gnupg.mount
+pacman-key --init >/dev/null 2>&1 && pacman-key --populate archlinux >/dev/null 2>&1 || true
 snapper --no-dbus -c root create -d "ARONA OS 설치 직후" >/dev/null
 CHROOT
 

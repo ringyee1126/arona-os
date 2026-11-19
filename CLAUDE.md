@@ -126,6 +126,9 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
   Alt를 뗀 것은 hyprland.lua의 타이머(`hl.is_key_down("Alt_L")`, 40ms)가 보고 `commit` 한다. release 단축키는 그 사이에 다른
   단축키(Alt+Tab)가 눌리면 Hyprland가 실행하지 않아서 쓸 수 없다. 시험: `hyprctl dispatch 'hl.dsp.exec_cmd((function() shittim_switcher("next")() return "true" end)())'`
 - Wine/Proton 트레이 창(explorer.exe, 제목 없음)은 창 규칙 `wine-tray`로 `special:winetray`에 보낸다 (블루 아카이브·카카오톡 공통).
+- pacman "키링을 쓸 수 없음": 설치 USB의 `/etc/systemd/system/etc-pacman.d-gnupg.mount`(tmpfs)가 설치된 시스템에 남아
+  다시 시작할 때마다 열쇠고리가 비워졌다. `tools/fix-speaker.sh`가 그 유닛을 지우고 `pacman-key --init/--populate` 한다
+  (설치 스크립트 `shittim-install`에도 반영).
 
 루트 필요 (apply-system.sh)
 - Steam·gamemode 등 패키지, 부팅·종료 컷씬(4.5초 시간 기반 진행 막대, 끝까지 재생, GRUB 메뉴 숨김 - Esc로 표시).

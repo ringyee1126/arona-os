@@ -151,7 +151,7 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
   `ffmpeg -c:v libvpx-vp9 -i X.webm -vf "crop=640:1280:39:0,pad=640:1300:0:13:color=0x00000000" -c:v libwebp_anim -quality 75 -loop 0 X.webp`
   (`-c:v libvpx-vp9` 를 입력 앞에 꼭 줄 것: 기본 vp9 디코더는 투명도를 버린다.)
 - 표정 연결(`AronaSprite.qml`의 `plana` 표): smile→idle, angry→displeased, curious→sparkling, thinking→serious, happy·surprised는 같은 이름.
-  나머지 17개(neutral calm downcast blushing dizzy …)는 파일만 있고 아직 어떤 상황에도 연결하지 않았다.
+  쓰지 않는 나머지 17개는 지웠다 (사용자 결정). 다시 필요하면 원본 zip에서 위 명령으로 변환한다.
 - 대사: `Arona.qml`의 `aronaLines` / `planaLines` (같은 키 63개), `Arona.lines`가 지금 캐릭터의 표. 표 밖의 문장은 `Arona.v(아로나, 프라나)`.
 - 교체: 설정 → 아로나 → 성격 저장 → `Arona.switching` 2초 동안 `Loading.qml`(Plymouth 테마 그림 재사용)이 덮고 1초째에 `Arona.who`가 바뀐다.
   끝나면 `hello` 대사. 대화 기록은 교체 때 비운다.

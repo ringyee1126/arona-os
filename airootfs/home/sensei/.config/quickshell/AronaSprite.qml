@@ -8,7 +8,7 @@ Item {
     property string mood: "smile"     // smile | surprised | angry | happy | curious | thinking
     property string who: Arona.who    // arona | plana
     property int fallback: 0
-    // 프라나는 표정 파일 이름이 다르다 (assets/plana/ 에 23개: idle neutral calm serious sparkling displeased …)
+    // 프라나는 표정 파일 이름이 다르다 (assets/plana/ 에 6개: idle happy surprised displeased sparkling serious)
     readonly property var plana: ({ smile: "idle", angry: "displeased", curious: "sparkling", thinking: "serious" })
     onMoodChanged: fallback = 0
     onWhoChanged: fallback = 0

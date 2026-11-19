@@ -73,7 +73,7 @@ hl.window_rule({ name = "windows-like-float", match = { class = ".*" }, float = 
 -- a pacman hook (shittim-hyprbars-rebuild) recompiles it whenever Hyprland is updated.
 hl.plugin.load("/usr/lib/hyprland-plugins/hyprbars.so")
 -- 제목 표시줄을 직접 그려서 hyprbars 를 안 쓰는 앱 (창 붙이기도 이 표를 본다)
-local BAR, NO_BAR, SETTINGS = 38, { "discord", "code", "code-oss", "org.gnome.FileRoller", "org.pulseaudio.pavucontrol", "org.gnome.Evince" }, "설정 · 싯딤의 상자"
+local BAR, NO_BAR, SETTINGS = 38, { "code", "code-oss", "org.gnome.FileRoller", "org.pulseaudio.pavucontrol", "org.gnome.Evince" }, "설정 · 싯딤의 상자"
 local function has_bar(w)
     if not hl.plugin.hyprbars or w.title == SETTINGS then return false end
     for _, c in ipairs(NO_BAR) do if w.class == c then return false end end
@@ -91,7 +91,7 @@ if hl.plugin.hyprbars then
     hl.plugin.hyprbars.add_button({ bg_color = "rgb(ff6b81)", fg_color = "rgb(ffffff)", size = 25, icon = "✕",
                                     action = "hyprctl dispatch 'hl.dsp.window.close()'" })
     hl.plugin.hyprbars.add_button({ bg_color = "rgb(2fa8e1)", fg_color = "rgb(ffffff)", size = 25, icon = "□", action = maximize })
-    -- apps that draw their own buttons (Chromium's tab strip, Discord, VS Code, GTK4 apps, KakaoTalk) and dialogs keep
+    -- apps that draw their own buttons (Chromium's tab strip, VS Code, GTK4 apps, KakaoTalk) and dialogs keep
     -- only theirs. Chromium app windows (chrome-*, e.g. the Claude app) draw none, so they do get the bar.
     hl.window_rule({ name = "hyprbars-own-buttons", ["hyprbars:no_bar"] = true,
         match = { class = "^(" .. table.concat(NO_BAR, "|"):gsub("%.", "\\.") .. ")$" } })

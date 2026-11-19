@@ -249,6 +249,7 @@ PanelWindow {
                 border.width: 2 * chat.s; border.color: input.activeFocus ? Theme.sky : "#CBE4F3"
                 TextInput {
                     id: input
+                    onTextChanged: Sfx.key(input); onPreeditTextChanged: Sfx.key(input)
                     anchors { fill: parent; leftMargin: 16 * chat.s; rightMargin: 16 * chat.s }
                     verticalAlignment: TextInput.AlignVCenter
                     clip: true

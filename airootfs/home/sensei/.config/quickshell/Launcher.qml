@@ -228,11 +228,12 @@ PanelWindow {
                     }
                     TextInput {
                         id: input
+                        onPreeditTextChanged: Sfx.key(input)
                         anchors { left: glass.right; leftMargin: 16 * ln.s; right: chip.left; rightMargin: 12 * ln.s; verticalCenter: parent.verticalCenter }
                         clip: true
                         color: Theme.ink; font.family: Theme.font; font.pixelSize: (ln.mode === "ask" ? 24 : 30) * ln.s; font.weight: Font.Bold
                         selectionColor: Theme.sky
-                        onTextChanged: ln.query = text
+                        onTextChanged: { ln.query = text; Sfx.key(input) }
                         Keys.onPressed: e => {
                             if (e.key === Qt.Key_Escape) { if (ln.mode === "ask") ln.mode = "search"; else Ui.launcherOpen = false }
                             else if (e.key === Qt.Key_Tab || e.key === Qt.Key_Backtab) ln.mode = ln.mode === "ask" ? "search" : "ask"

@@ -12,6 +12,7 @@ def tone(f0, f1, ms, decay=6.0, vol=0.35):
     return out
 SOUNDS = {
     "tap":     tone(1500, 1250, 45, 7),
+    "key":     tone(2400, 1500, 22, 9, 0.22),
     "open":    tone(660, 660, 70, 4) + tone(990, 990, 110, 5),
     "close":   tone(990, 990, 70, 4) + tone(660, 660, 110, 5),
     "send":    tone(520, 1250, 110, 3.5),

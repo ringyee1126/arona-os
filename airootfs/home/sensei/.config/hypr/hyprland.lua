@@ -17,6 +17,8 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("xdg-user-dirs-update")
     hl.exec_cmd("shittim-dev-sync")   -- VM only: live-reloads ~/.config from the Windows project
     hl.exec_cmd("fcitx5 -d")
+    -- 크롬·GTK 앱이 직접 그리는 제목 표시줄에도 □ 버튼 (기본값은 ✕ 뿐)
+    hl.exec_cmd("gsettings set org.gnome.desktop.wm.preferences button-layout appmenu:maximize,close")
     hl.exec_cmd("wl-paste --watch cliphist store")
     -- USB 자동 마운트, 관리자 권한 비밀번호 창 (packages.extra; 설치돼 있을 때만)
     hl.exec_cmd("sh -c 'command -v udiskie >/dev/null && exec udiskie --no-tray'")

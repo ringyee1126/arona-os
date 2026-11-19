@@ -95,6 +95,7 @@ FloatingWindow {
         border.width: 2 * Theme.scale; border.color: ti.activeFocus ? Theme.sky : "#CBE4F3"
         TextInput {
             id: ti
+            onTextChanged: Sfx.key(ti); onPreeditTextChanged: Sfx.key(ti)
             anchors { fill: parent; leftMargin: 16 * Theme.scale; rightMargin: 16 * Theme.scale }
             verticalAlignment: TextInput.AlignVCenter
             clip: true
@@ -117,6 +118,7 @@ FloatingWindow {
         border.width: 2 * Theme.scale; border.color: te.activeFocus ? Theme.sky : "#CBE4F3"
         TextEdit {
             id: te
+            onTextChanged: Sfx.key(te); onPreeditTextChanged: Sfx.key(te)
             x: 16 * Theme.scale; y: 12 * Theme.scale; width: parent.width - 32 * Theme.scale
             wrapMode: TextEdit.Wrap
             color: Theme.ink; selectionColor: Theme.sky; selectedTextColor: "white"

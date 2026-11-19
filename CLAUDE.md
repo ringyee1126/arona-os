@@ -101,6 +101,9 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
 - 카카오톡(Wine)에서 받은 파일 → `shittim-wine-open` 이 이 OS의 기본 앱으로 연다 (Windows 프로그램 없음 경고 제거).
 - 부팅 직후 바탕화면이 잠깐 보이던 것: 셸이 첫 시작 때 스스로 잠근다 (`Lock.qml`, `/run/user/1000/shittim-locked-once`).
 - 독: Steam 추가, 큰 버튼 = "업무 시작하기"(`shittim-work`, 블루 아카이브가 Steam에 설치돼 있을 때만 켜짐), 왼쪽에 아로나 검색.
+- 타자 소리: 셸의 글 입력 칸(대화, 검색, 설정, 잠금화면)에서 `Sfx.key()` → `assets/sfx/key.wav`. 다른 앱 안에서는 안 난다.
+- 크롬·GTK 앱 제목 표시줄에 □ 버튼: `gsettings ... button-layout appmenu:maximize,close` (hyprland.lua 시작 훅).
+- Steam: 고장이 아니었다. 첫 실행 때 창 없이 몇 분간 약 700MB를 받는다 (`~/.local/share/Steam/logs/bootstrap_log.txt`).
 
 루트 필요 (apply-system.sh)
 - Steam·gamemode 등 패키지, 부팅·종료 컷씬(4.5초 시간 기반 진행 막대, 끝까지 재생, GRUB 메뉴 숨김 - Esc로 표시).

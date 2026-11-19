@@ -176,6 +176,7 @@ Item {
                         color: "#F3F9FD"; border.color: v.ctl.fails > 0 && field.text === "" ? "#E0485A" : Theme.sky; border.width: 2 * v.s
                         TextInput {
                             id: field
+                            onTextChanged: Sfx.key(field); onPreeditTextChanged: Sfx.key(field)
                             anchors { left: parent.left; right: parent.right; leftMargin: 18 * v.s; rightMargin: 18 * v.s; verticalCenter: parent.verticalCenter }
                             echoMode: TextInput.Password; passwordCharacter: "●"
                             color: Theme.ink; font.family: Theme.font; font.pixelSize: 28 * v.s; font.letterSpacing: 6 * v.s

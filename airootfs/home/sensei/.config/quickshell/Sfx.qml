@@ -10,4 +10,11 @@ Singleton {
         if (Arona.settings.sounds) Quickshell.execDetached(["pw-play", "--volume", "0.7", dir + name + ".wav"])
     }
     function tap() { play("tap") }
+    // 타자 소리: 글자를 직접 칠 때만 (포커스가 있을 때), 조합 확정처럼 한 번에 두 번 바뀌는 건 한 번만
+    property real lastKey: 0
+    function key(field) {
+        const now = Date.now()
+        if (!field.activeFocus || now - lastKey < 25) return
+        lastKey = now; play("key")
+    }
 }

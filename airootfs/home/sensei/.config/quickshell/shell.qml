@@ -26,7 +26,7 @@ ShellRoot {
     }
     IpcHandler {   // 윈도우 키만 눌렀다 떼면 (hyprland.lua)
         target: "menu"
-        function toggle(): void { Ui.menuOpen = !Ui.menuOpen }
+        function toggle(): void { if (!lockScreen.locked) Ui.menuOpen = !Ui.menuOpen }
     }
     Connections {
         target: Ui

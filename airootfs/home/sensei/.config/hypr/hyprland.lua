@@ -114,7 +114,25 @@ hl.bind(mod .. " + SHIFT + E", hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.exit()'
 
 -- ---------- Windows식 창 조작 ----------
 -- 윈도우 키만 눌렀다 떼면 오른쪽 위 ≡ 메뉴
-hl.bind(mod .. " + Super_L", hl.dsp.exec_cmd("quickshell ipc call menu toggle"), { release = true })
+-- 떼는 순간에 거는 단축키(SUPER + Super_L, release)는 가상 키보드에서는 되는데 노트북 키보드에서는 불리지 않는다(원인 미확인).
+-- 그래서 Alt+Tab처럼 키 상태를 직접 본다: 누르고 있는 동안 다른 키도 마우스 끌기도 없었으면 뗄 때 메뉴.
+local super = nil   -- 윈도우 키가 눌려 있는 동안 { x, y = 누를 때 마우스 자리, solo = 아직 혼자 눌렸나 }
+hl.timer(function()
+    local down = hl.is_key_down("Super_L")
+    if down and not super then
+        local c = hl.get_cursor_pos()
+        super = { x = c and c.x or 0, y = c and c.y or 0, solo = true }
+    elseif down and super.solo then
+        local c = hl.get_cursor_pos()
+        if c and (math.abs(c.x - super.x) > 10 or math.abs(c.y - super.y) > 10) then super.solo = false end   -- Super + 끌기
+        for code = 9, 255 do   -- 133 = 윈도우 키 자신
+            if code ~= 133 and hl.is_key_down(code) then super.solo = false break end
+        end
+    elseif not down and super then
+        if super.solo then hl.dispatch(hl.dsp.exec_cmd("quickshell ipc call menu toggle")) end
+        super = nil
+    end
+end, { timeout = 20, type = "repeat" })
 -- Super + 왼쪽/오른쪽 버튼 끌기 = 창 옮기기 / 크기 바꾸기 (제목 표시줄이 없는 창도)
 hl.bind(mod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
 hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })

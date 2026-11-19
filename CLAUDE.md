@@ -91,7 +91,8 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
 - 창: 모든 창이 떠 있는 창(Windows식). 제목 표시줄 끌기, 테두리로 크기 조절, Super+끌기, Super+←/→ 반쪽, Super+↑ 최대화,
   Alt+Tab, Alt+F4, Super+D. 설정 창이 맨 앞에 고정되던 것도 이것으로 해결 (타일 창은 항상 떠 있는 창 밑이었다).
 - 스크린샷: `~/.local/bin/shittim-shot` → `~/사진/스크린샷` 저장 + 클립보드. Print / Super+Shift+S / Super+Print.
-- 윈도우 키 단독 = ≡ 메뉴. 소리·밝기·미디어 키. Super+V 클립보드 기록(fuzzel 설치 후).
+- 윈도우 키 단독 = ≡ 메뉴 (hyprland.lua의 20ms 타이머가 `hl.is_key_down("Super_L")`을 본다. release 단축키 `SUPER + Super_L`은 가상 키보드(uinput)로는 되는데
+  노트북 키보드에서는 불리지 않았다 - 원인 미확인. 시험: /dev/uinput 은 sensei가 쓸 수 있어 가상 키 입력이 가능). 소리·밝기·미디어 키. Super+V 클립보드 기록(fuzzel 설치 후).
 - 한/영: `kb_options = korean:ralt_hangul` (오른쪽 Alt를 Hangul 키로). **사용자 확인 필요.**
 - 말풍선을 얼굴 옆으로. 좌상단 배지 = 요일 + 월/일. 성격은 아로나/프라나/커스텀.
 - Gemini: 25초 × 최대 3번 재시도, 예비 모델 `gemini-flash-lite-latest`. 모델 목록은 `-latest` 별칭만 (2.5 계열은 404).

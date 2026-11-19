@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# LG 그램 15Z95U 내장 스피커: 커널의 snd-acp-config 모듈에 이 모델을 등록해 다시 빌드한다.
+# 이 노트북의 BIOS에는 "acp-audio-config-flag"가 없어서 커널이 마이크 전용 드라이버를 고르고, 스피커 칩(Realtek RT722,
+# SoundWire)을 켜는 드라이버(snd_pci_ps)는 물러난다. 커널에는 그런 기종을 적는 표(acp70_acpi_flag_override_table)가 있고
+# 거기에 한 항목을 넣으면 된다. 커널이 업데이트될 때마다 pacman 훅이 이 스크립트를 다시 돌린다.
+# 되돌리기: rm /usr/lib/modules/*/updates/snd-acp-config.ko && depmod -a   (그리고 다시 시작)
+set -uo pipefail
+[[ $EUID -eq 0 ]] || { echo "sudo로 실행해 주세요"; exit 1; }
+grep -q 15Z95U /sys/class/dmi/id/board_name 2>/dev/null || { echo "이 기종은 해당 없음"; exit 0; }
+rc=0
+for build in /usr/lib/modules/*/build; do
+  k=$(basename "$(dirname "$build")"); out=/usr/lib/modules/$k/updates/snd-acp-config.ko
+  [[ -f $build/Makefile ]] || continue
+  [[ -f $out && $out -nt /usr/lib/modules/$k/vmlinuz ]] && { echo "$k: 이미 있음"; continue; }
+  v=${k%%-*}; v=${v%.0}; t=$(mktemp -d); mkdir -p "$t/sound/soc/amd" "$t/sound/soc/sof/amd"
+  ok=1
+  for f in sound/soc/amd/acp-config.c sound/soc/amd/mach-config.h sound/soc/sof/amd/acp.h sound/soc/sof/sof-priv.h sound/soc/sof/sof-audio.h; do
+    curl -fsSL -m 60 -o "$t/$f" "https://raw.githubusercontent.com/gregkh/linux/v$v/$f" || ok=0
+  done
+  c=$t/sound/soc/amd/acp-config.c
+  if [[ $ok == 1 ]] && grep -q 15Z95U "$c"; then echo "$k: 커널에 이미 들어 있음 - 패치 불필요"; rm -f "$out"; rm -rf "$t"; continue; fi
+  if [[ $ok == 1 ]] && grep -q '^static const struct dmi_system_id acp70_acpi_flag_override_table\[\] = {$' "$c"; then
+    sed -i '/^static const struct dmi_system_id acp70_acpi_flag_override_table\[\] = {$/a\	{ /* LG gram 15Z95U (RT722 on SoundWire): BIOS has no acp-audio-config-flag */\n\t\t.matches = { DMI_MATCH(DMI_BOARD_VENDOR, "LG Electronics"), DMI_MATCH(DMI_BOARD_NAME, "15Z95U"), },\n\t},' "$c"
+    printf 'obj-m := snd-acp-config.o\nsnd-acp-config-y := acp-config.o\n' > "$t/sound/soc/amd/Kbuild"
+    if make -C "$build" M="$t/sound/soc/amd" modules >"$t/log" 2>&1; then
+      install -Dm644 "$t/sound/soc/amd/snd-acp-config.ko" "$out"; depmod "$k"; echo "$k: 설치함 → $out"
+    else echo "$k: 빌드 실패"; tail -5 "$t/log"; rc=1; fi
+  else echo "$k: 소스를 받지 못했거나 커널 코드가 바뀜 - 건너뜀 (스피커는 이 커널에서 안 날 수 있음)"; rc=1; fi
+  rm -rf "$t"
+done
+exit $rc

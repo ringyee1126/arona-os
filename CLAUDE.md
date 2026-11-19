@@ -114,8 +114,15 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
 - Steam: 고장이 아니었다. 첫 실행 때 창 없이 몇 분간 약 700MB를 받는다 (`~/.local/share/Steam/logs/bootstrap_log.txt`).
 - 화면 녹화: PrtSc = `shittim-shot menu` (fuzzel 목록: 사진 영역/전체, 녹화 전체/영역 × 컴퓨터 소리 포함/없이). 녹화 중 PrtSc = 녹화 끝.
   wf-recorder → `~/비디오/화면 녹화/*.mp4`. 소리는 기본 출력 장치의 모니터(`pactl get-default-sink`.monitor)를 녹음한다.
-- **소리 출력 장치가 없다 (2026-11-19 확인)**: PipeWire에 "Dummy Output"만 있다. 커널이 HDMI 오디오와 acp-pdm-mach(마이크)만 잡고
-  내장 스피커 코덱(AMD ACP 1022:15e2 rev 72, LG 15Z95U)은 못 잡는다. 블루투스·HDMI를 연결하지 않으면 효과음·목소리·녹화 소리가 전부 무음.
+- **내장 스피커가 안 잡힌다 (2026-11-19)**: PipeWire에 "Dummy Output"만 있다. 스피커 칩은 SoundWire의 Realtek RT722
+  (ACPI `\_SB.PCI0.GPPA.ACP.SDWC.SW21`, _ADR 0x000030025d072201, 커널 표 `acp70_rt722_only`에 있음). 그런데 BIOS에
+  `acp-audio-config-flag`가 없어 `snd_amd_acp_find_config()`가 "마이크 전용"을 돌려주고 snd_pci_ps(SoundWire) 대신 snd_acp_pci가 붙는다.
+  고치는 법 = `acp70_acpi_flag_override_table`에 이 기종 추가. `sudo bash tools/fix-speaker.sh` 가 그 한 항목을 넣은
+  `snd-acp-config.ko`를 빌드해 `/usr/lib/modules/<커널>/updates/`에 넣는다 (`shittim-speaker-rebuild`, 커널 업데이트 때는 pacman 훅).
+  빌드까지는 확인했고 **재부팅 후 실제로 소리가 나는지는 미확인.** 되돌리기: updates의 그 파일을 지우고 `depmod -a`.
+- 카카오톡: 창을 옮길 수 있게 Wine 창(`*.exe`)도 hyprbars 제목 표시줄을 쓴다. Wine 트레이 창(explorer.exe 160x20)은
+  레지스트리 `HKCU\Software\Wine\X11 Driver\ShowSystray=N` 으로 껐다 (기존 프리픽스에 적용함, 새 설치는 kakaotalk 스크립트).
+- Alt+Tab: `Switcher.qml` 창 목록(미리보기, 최근 사용 순). Alt+Tab/Alt+Shift+Tab = `ipc call switcher next/prev`, Alt 떼기 = `commit`.
 
 루트 필요 (apply-system.sh)
 - Steam·gamemode 등 패키지, 부팅·종료 컷씬(4.5초 시간 기반 진행 막대, 끝까지 재생, GRUB 메뉴 숨김 - Esc로 표시).

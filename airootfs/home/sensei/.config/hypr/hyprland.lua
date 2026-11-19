@@ -87,7 +87,7 @@ if hl.plugin.hyprbars then
     -- apps that draw their own buttons (Chromium's tab strip, Discord, VS Code, GTK4 apps, KakaoTalk) and dialogs keep
     -- only theirs. Chromium app windows (chrome-*, e.g. the Claude app) draw none, so they do get the bar.
     hl.window_rule({ name = "hyprbars-own-buttons", ["hyprbars:no_bar"] = true,
-        match = { class = "^(discord|code|code-oss|org\\.gnome\\.FileRoller|org\\.pulseaudio\\.pavucontrol|org\\.gnome\\.Evince|.*\\.exe)$" } })
+        match = { class = "^(discord|code|code-oss|org\\.gnome\\.FileRoller|org\\.pulseaudio\\.pavucontrol|org\\.gnome\\.Evince)$" } })
     hl.window_rule({ name = "hyprbars-no-settings", ["hyprbars:no_bar"] = true, match = { title = "^설정 · 싯딤의 상자$" } })
 end
 
@@ -129,7 +129,11 @@ hl.bind(mod .. " + left",  half(false))
 hl.bind(mod .. " + right", half(true))
 hl.bind(mod .. " + up", hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }))
 hl.bind("ALT + F4", hl.dsp.window.close())
-hl.bind("ALT + Tab", function() hl.dispatch(hl.dsp.window.cycle_next()); hl.dispatch(hl.dsp.window.bring_to_top()) end)
+-- Alt+Tab: 창 목록(Switcher.qml)을 보여주며 고르고, Alt를 떼면 그 창으로 간다
+hl.bind("ALT + Tab", hl.dsp.exec_cmd("quickshell ipc call switcher next"), { repeating = true })
+hl.bind("ALT + SHIFT + Tab", hl.dsp.exec_cmd("quickshell ipc call switcher prev"), { repeating = true })
+hl.bind("ALT + Alt_L", hl.dsp.exec_cmd("quickshell ipc call switcher commit"), { release = true, non_consuming = true })
+hl.bind("ALT + SHIFT + Alt_L", hl.dsp.exec_cmd("quickshell ipc call switcher commit"), { release = true, non_consuming = true })
 -- Super + D = 바탕화면 보기 (빈 작업 공간 9로 갔다가 다시 누르면 돌아옴)
 hl.bind(mod .. " + D", function()
     local ws = hl.get_active_workspace()

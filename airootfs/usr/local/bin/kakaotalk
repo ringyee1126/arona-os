@@ -15,6 +15,8 @@ if [[ -z $EXE ]]; then
   reg=$(mktemp --suffix=.reg)
   printf 'REGEDIT4\n\n[HKEY_CURRENT_USER\Software\Wine\Fonts\Replacements]\n"Gulim"="Noto Sans CJK KR"\n"GulimChe"="Noto Sans CJK KR"\n"Dotum"="Noto Sans CJK KR"\n"Batang"="Noto Sans CJK KR"\n"Malgun Gothic"="Noto Sans CJK KR"\n' > "$reg"
   wine regedit "$reg" >/dev/null 2>&1; rm -f "$reg"
+  # Wine의 "시스템 트레이" 창(160x20 빈 창)을 띄우지 않는다: 이 OS에는 트레이가 없어 화면에 작은 창으로 떠 있었다
+  wine reg add 'HKCU\Software\Wine\X11 Driver' /v ShowSystray /t REG_SZ /d N /f >/dev/null 2>&1
   # 받은 파일(md, zip, 사진…)을 이 OS의 기본 프로그램으로 연다: "Windows 프로그램이 없습니다" 경고 방지
   command -v shittim-wine-open >/dev/null && shittim-wine-open --register
   wine "$tmp"; rm -f "$tmp"

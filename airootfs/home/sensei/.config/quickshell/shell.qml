@@ -14,6 +14,7 @@ ShellRoot {
     Launcher { screen: Quickshell.screens[0] }
     Chat { screen: Quickshell.screens[0] }
     PowerMenu { screen: Quickshell.screens[0] }
+    Switcher { screen: Quickshell.screens[0] }
     // Super+I (설정) / Super+A (아로나와 대화); "settings open bluetooth" opens a given page.
     // 설정 itself runs in its own process (settings-app.qml), see Ui.settings().
     IpcHandler {

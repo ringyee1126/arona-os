@@ -1,0 +1,11 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = linux
+Target = linux-headers
+
+[Action]
+Description = LG 그램 내장 스피커 드라이버 다시 빌드 (shittim-speaker-rebuild)
+When = PostTransaction
+Exec = /usr/local/bin/shittim-speaker-rebuild

@@ -12,3 +12,5 @@ mission-center        # 작업 관리자
 polkit-gnome          # 관리자 권한 비밀번호 창
 cups                  # 인쇄
 system-config-printer # 프린터 추가 화면
+linux-headers         # 내장 스피커 드라이버 모듈 빌드 (shittim-speaker-rebuild)
+pahole                # 위와 같음 (커널 모듈 빌드 도구)

@@ -35,7 +35,8 @@ PanelWindow {
         open = false
         const w = wins[idx]
         if (w && idx !== 0) Quickshell.execDetached(["sh", "-c",
-            "hyprctl dispatch \"hl.dsp.focus({ window = 'address:$1' })\"; hyprctl dispatch 'hl.dsp.window.bring_to_top()'", "sh", w.address])
+            // 목록 창이 사라질 때 Hyprland가 마우스 밑의 창으로 포커스를 되돌리므로, 그 뒤에 옮긴다
+            "sleep 0.12; hyprctl dispatch \"hl.dsp.focus({ window = 'address:$1' })\"; hyprctl dispatch 'hl.dsp.window.bring_to_top()'", "sh", w.address])
     }
     function thumb(address) {      // 같은 창의 Wayland 핸들 (미리보기용). 못 찾으면 글자만 보인다
         const a = String(address).replace(/^0x/, "")

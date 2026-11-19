@@ -129,11 +129,25 @@ hl.bind(mod .. " + left",  half(false))
 hl.bind(mod .. " + right", half(true))
 hl.bind(mod .. " + up", hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }))
 hl.bind("ALT + F4", hl.dsp.window.close())
--- Alt+Tab: 창 목록(Switcher.qml)을 보여주며 고르고, Alt를 떼면 그 창으로 간다
-hl.bind("ALT + Tab", hl.dsp.exec_cmd("quickshell ipc call switcher next"), { repeating = true })
-hl.bind("ALT + SHIFT + Tab", hl.dsp.exec_cmd("quickshell ipc call switcher prev"), { repeating = true })
-hl.bind("ALT + Alt_L", hl.dsp.exec_cmd("quickshell ipc call switcher commit"), { release = true, non_consuming = true })
-hl.bind("ALT + SHIFT + Alt_L", hl.dsp.exec_cmd("quickshell ipc call switcher commit"), { release = true, non_consuming = true })
+-- Alt+Tab: 창 목록(Switcher.qml)을 보여주며 고르고, Alt를 떼면 목록을 닫고 그 창을 맨 앞으로.
+-- Alt를 뗀 것은 타이머로 확인한다: 떼는 순간에 거는 단축키(release)는 그 사이 Alt+Tab이 눌렸으면 Hyprland가 실행하지 않는다.
+local alt_watch
+alt_watch = hl.timer(function()
+    if hl.is_key_down("Alt_L") then return end
+    alt_watch:set_enabled(false)
+    hl.dispatch(hl.dsp.exec_cmd("quickshell ipc call switcher commit"))
+end, { timeout = 40, type = "repeat" })
+function shittim_switcher(dir)   -- 전역: hyprctl로 시험할 수 있게
+    return function()
+        hl.dispatch(hl.dsp.exec_cmd("quickshell ipc call switcher " .. dir))
+        alt_watch:set_enabled(true)
+    end
+end
+hl.bind("ALT + Tab", shittim_switcher("next"), { repeating = true })
+hl.bind("ALT + SHIFT + Tab", shittim_switcher("prev"), { repeating = true })
+-- Wine/Proton이 띄우는 빈 "시스템 트레이" 창(explorer.exe, 160x20; 카카오톡·블루 아카이브를 켤 때)을 안 보이는 곳으로
+hl.window_rule({ name = "wine-tray", match = { class = "^explorer\\.exe$", title = "^$" },
+                 workspace = "special:winetray silent", no_focus = true, no_initial_focus = true })
 -- Super + D = 바탕화면 보기 (빈 작업 공간 9로 갔다가 다시 누르면 돌아옴)
 hl.bind(mod .. " + D", function()
     local ws = hl.get_active_workspace()

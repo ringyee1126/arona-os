@@ -14,10 +14,10 @@ Item {
         visible: false; clip: true; layer.enabled: true
         Rectangle { anchors.fill: parent; color: Theme.skySoft }
         Image {   // face centre of arona.png (913x1920) is at ~(428, 414)
-            // plana.png (640x1300, idle 첫 프레임): 얼굴 중심 ~(360, 320)
-            x: -a.width * (a.plana ? 0.94 : 0.93)
-            y: -a.height * (a.plana ? 0.78 : 0.88)
-            width: a.width * (a.plana ? 2.56 : 3.04); height: width * (a.plana ? 1300 / 640 : 1920 / 913)
+            // plana.png 은 사용자가 고른 정사각형(500x500) 얼굴 그림이라 그대로 채운다
+            x: a.plana ? 0 : -a.width * 0.93
+            y: a.plana ? 0 : -a.height * 0.88
+            width: a.width * (a.plana ? 1 : 3.04); height: a.plana ? width : width * 1920 / 913
             source: Theme.assets + (a.plana ? "plana.png" : "arona.png"); smooth: true; mipmap: true
         }
     }

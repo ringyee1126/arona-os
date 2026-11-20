@@ -13,7 +13,7 @@ if [[ -z $DEV ]]; then
   DEV=${usb[0]}
 fi
 # 내장 디스크에 굽는 사고 방지: USB로 연결된 디스크만 받는다
-[[ $(lsblk -dno TRAN,TYPE "$DEV") == "usb disk" ]] || { echo "$DEV 은(는) USB 디스크가 아니에요."; exit 1; }
+[[ $(lsblk -dno TRAN,TYPE "$DEV" | xargs) == "usb disk" ]] || { echo "$DEV 은(는) USB 디스크가 아니에요."; exit 1; }
 SIZE=$(stat -c %s "$ISO")
 lsblk -o NAME,SIZE,LABEL,MODEL "$DEV"
 read -rp "$DEV 의 내용을 모두 지우고 $(basename "$ISO") 를 구울까요? (YES): " ok

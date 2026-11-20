@@ -166,7 +166,7 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
 
 ## 프라나 컷씬 색·잠금화면·창 위치 (2026-11-20)
 - 보라색 컷씬: Plymouth 테마에 그림 세트 두 벌 `themes/shittim/arona/`(파랑, 원본) · `plana/`(보라). 테마 폴더 맨 위의 png가 실제로 쓰이는 것.
-  보라 세트는 원본을 색상만 돌린 것: `ffmpeg -i arona/X.png -vf "format=yuva444p10le,hue=h=60,format=rgba" plana/X.png` (원본 그림을 바꾸면 다시 만들 것).
+  보라 세트는 원본을 색상만 돌린 것: `ffmpeg -i arona/X.png -vf "format=yuva444p10le,hue=h=48,format=rgba" plana/X.png` (원본 그림을 바꾸면 다시 만들 것).
   `shittim-splash-who`(루트, `shittim-splash-who.path`가 `~/.config/shittim` 변경을 보고 실행 + 부팅 때 한 번)가 성격이 바뀐 때에만
   세트를 맨 위로 복사하고 `mkinitcpio -P` 한다 (부팅 컷씬은 initramfs 안의 그림을 쓴다). 지금 색은 `themes/shittim/who`.
   종료 컷씬은 바로, 부팅 컷씬은 initramfs가 다 만들어진 뒤(10~20초)부터 바뀐다. 설치: `sudo bash tools/apply-splash.sh`.

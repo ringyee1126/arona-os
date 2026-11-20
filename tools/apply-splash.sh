@@ -9,5 +9,6 @@ install -m644 "$R"/etc/systemd/system/shittim-splash-who.{service,path} /etc/sys
 systemctl daemon-reload
 systemctl enable shittim-splash-who.service
 systemctl enable --now shittim-splash-who.path
+rm -f $T/who                         # 그림이 바뀌었을 수 있으니 같은 캐릭터여도 다시 깔고 initramfs를 다시 만든다
 /usr/local/bin/shittim-splash-who      # 지금 캐릭터에 맞춘다 (프라나면 여기서 initramfs를 다시 만든다)
 echo "컷씬 색: $(cat $T/who)"

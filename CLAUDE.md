@@ -197,3 +197,10 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
   `hl.dsp.window.fullscreen({ mode = "maximized" })` 를 다시 쓰지 말 것. (최대화 이벤트를 받아 바로 풀고 크기를 바꾸는 방식은 가끔 크기가 안 바뀌었다.)
 - 전체 화면(게임): 활성이 되거나 눌릴 때마다 `alter_zorder bottom` 으로 맨 밑에 둔다 (hyprland.lua `sink`).
 - 시험: /dev/uinput 가상 마우스로 클릭 + `kitty`에서 `printf '\033[?1000h'` 로 어느 창이 클릭을 받았는지 확인. 실제 게임(블루 아카이브)으로는 미확인.
+
+## 블루투스 연결이 잘 안 됨 (2026-11-21)
+- 어댑터: MediaTek MT7922 (USB 13d3:3576, btusb). 기록에 남은 실패는 전부 `br-connection-page-timeout`(기기가 응답 없음,
+  bluetoothd 로그에는 "Unable to get Hands-Free ... Host is down"). 시험할 때 기기가 켜져 있었는지는 모른다 → **원인 미확정.**
+- 한 것 1: 설정 → 블루투스의 "연결"이 세 번까지 알아서 다시 건다(붙자마자 끊겨도), 다 실패하면 안내 문구 (`Settings.qml` btPage의 `go()`/`tries`).
+- 한 것 2 (루트, **사용자가 실행해야 적용**): `sudo bash tools/fix-bluetooth.sh` = btusb USB 절전 끄기 (`/etc/modprobe.d/shittim-bluetooth.conf`).
+- 그래도 안 되면: 기기를 켠 채 `journalctl -b -u bluetooth -f` 를 보며 연결. "붙었다가 바로 끊김"이 인증 실패(키 불일치)면 설정에서 삭제 후 다시 페어링.

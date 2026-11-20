@@ -29,5 +29,6 @@ sed -i -e 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=1/' -e 's/^GRUB_TIMEOUT_STYLE=.*/GRUB
 grub-mkconfig -o /boot/grub/grub.cfg
 mkinitcpio -P          # 스플래시 스크립트가 initramfs 안에 들어 있어서 다시 만든다
 bash "$SRC/tools/apply-splash.sh"   # 프라나면 보라색 컷씬
+bash "$SRC/tools/fix-bluetooth.sh"    # 블루투스 어댑터 절전 끄기
 echo
 echo "끝났어요. 다시 시작하면 컷씬이 적용됩니다."

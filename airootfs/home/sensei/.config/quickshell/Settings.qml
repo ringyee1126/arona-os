@@ -475,7 +475,19 @@ FloatingWindow {
                         readonly property var d: modelData
                         readonly property bool busy: d.pairing || d.state === BluetoothDeviceState.Connecting || d.state === BluetoothDeviceState.Disconnecting
                         width: parent.width
-                        Connections { target: bd.d; function onPairedChanged() { if (bd.d.paired && !bd.d.connected) bd.d.connect() } }
+                        // 한 번에 안 붙는 기기가 많다(응답 없음 = page timeout, 붙자마자 끊김): 누르면 세 번까지 알아서 다시 건다
+                        property int tries: 0
+                        property bool failed: false
+                        function go() { failed = false; tries = 3; d.connect() }
+                        Timer { id: retry; interval: 1000; onTriggered: if (!bd.d.connected) bd.d.connect() }
+                        Connections {
+                            target: bd.d
+                            function onPairedChanged() { if (bd.d.paired && !bd.d.connected) bd.go() }
+                            function onStateChanged() {
+                                if (bd.d.state !== BluetoothDeviceState.Disconnected || bd.tries === 0) return
+                                if (--bd.tries > 0) retry.restart(); else bd.failed = true
+                            }
+                        }
                         Line { visible: bd.index > 0 }
                         Item {
                             width: parent.width; height: 62 * win.s
@@ -486,8 +498,9 @@ FloatingWindow {
                                     spacing: 6 * win.s
                                     Dot { visible: bd.d.connected; anchors.verticalCenter: parent.verticalCenter }
                                     Sub {
-                                        text: bd.d.pairing ? "페어링하는 중…" : bd.busy ? "연결하는 중…"
+                                        text: bd.d.pairing ? "페어링하는 중…" : (bd.busy || retry.running) ? "연결하는 중…"
                                             : bd.d.connected ? "연결됨" + (bd.d.batteryAvailable ? " · 배터리 " + Math.round(bd.d.battery > 1 ? bd.d.battery : bd.d.battery * 100) + "%" : "")
+                                            : bd.failed ? "연결하지 못했어요 · 기기가 켜져 있는지, 휴대폰에 붙어 있지 않은지 확인해 주세요"
                                             : bd.d.paired ? "저장된 기기" : "새 기기"
                                     }
                                 }
@@ -505,9 +518,9 @@ FloatingWindow {
                                     primary: !bd.d.connected
                                     text: bd.d.connected ? "연결 끊기" : "연결"
                                     onClicked: {
-                                        if (bd.busy) return
-                                        if (bd.d.connected) bd.d.disconnect()
-                                        else if (bd.d.paired) bd.d.connect()
+                                        if (bd.busy || retry.running) return
+                                        if (bd.d.connected) { bd.tries = 0; bd.d.disconnect() }
+                                        else if (bd.d.paired) bd.go()
                                         else { bd.d.trusted = true; bd.d.pair() }
                                     }
                                 }

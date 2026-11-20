@@ -1,0 +1,12 @@
+[Unit]
+Description=Shittim OS: 부팅·종료 컷씬 색을 캐릭터(아로나/프라나)에 맞춘다
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/shittim-splash-who
+# 종료가 겹쳐도 initramfs 만들기를 끊지 않는다
+KillMode=mixed
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target

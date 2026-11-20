@@ -251,10 +251,23 @@ hl.bind("ALT + Escape", hl.dsp.exec_cmd("quickshell ipc call switcher cancel")) 
 hl.window_rule({ name = "wine-tray", match = { class = "^explorer\\.exe$", title = "^$" },
                  workspace = "special:winetray silent", no_focus = true, no_initial_focus = true })
 -- Proton(Steam) 게임의 트레이 창은 class가 게임과 같아서(steam_app_<id>) 위 규칙에 안 걸린다: 크기(160x20)까지 보고 치운다
+-- 새로 뜬 창의 제목 표시줄이 상단 바 밑·화면 위로 나가지 않게 내린다 (화면보다 큰 창을 가운데에 놓으면 위가 잘렸다).
+-- 창이 뜰 때에만 본다: 사용자가 나중에 위로 올리는 것은 막지 않는다. 제목 없는 X11 창(메뉴·툴팁)은 건드리지 않는다.
+local function keep_top(w)
+    if not (w.mapped and w.floating) or (w.fullscreen or 0) ~= 0 or (w.xwayland and w.title == "") then return end
+    local m = w.monitor
+    if not m then return end
+    local top = m.y + (m.reserved.top or 0) + (has_bar(w) and BAR or 0) + 6
+    if w.at.y < top then hl.dispatch(hl.dsp.window.move({ x = w.at.x, y = top, window = "address:" .. w.address })) end
+end
 hl.on("window.open", function(w)
     if w.title == "" and w.class:match("^steam_app_%d+$") and w.size.x == 160 and w.size.y == 20 then
-        hl.dispatch(hl.dsp.window.move({ workspace = "special:winetray", follow = false, window = "address:" .. w.address }))
+        return hl.dispatch(hl.dsp.window.move({ workspace = "special:winetray", follow = false, window = "address:" .. w.address }))
     end
+    keep_top(w)
+    -- 뜬 직후에 스스로 크기를 키우는 앱이 있어서 0.4초 뒤에 한 번 더 본다 (그 사이 닫힌 창이면 pcall이 넘긴다)
+    local again
+    again = hl.timer(function() again:set_enabled(false); pcall(keep_top, w) end, { timeout = 400, type = "repeat" })
 end)
 -- 한/영 키는 Hyprland가 받아서 입력기를 직접 바꾼다. 앱을 거치면(특히 Wine 카카오톡: 글 칸에 입력기가 안 붙은 순간)
 -- 키가 입력기까지 못 가서 씹혔다. 오른쪽 Alt도 위의 kb_options 때문에 Hangul 로 들어온다.

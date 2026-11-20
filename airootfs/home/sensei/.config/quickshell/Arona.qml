@@ -204,7 +204,9 @@ Singleton {
     property string who: "arona"
     property bool switching: false
     property bool up: false
-    Component.onCompleted: { who = wantWho; up = true }
+    // 설정 파일은 뒤에서 읽힌다: 다 읽기를 기다리지 않으면 "arona"로 시작하고, 읽힌 뒤 교체(1초)가 잠금화면 밑에서 돌아
+    // 잠금화면에 아로나가 잠깐 나왔다가 프라나로 바뀐다. 여기서 기다리면 첫 화면부터 맞는 캐릭터다.
+    Component.onCompleted: { cfgFile.waitForJob(); who = wantWho; up = true }
     onWantWhoChanged: if (up) { switching = true; swap.restart() }
     Timer {
         id: swap; interval: 1000

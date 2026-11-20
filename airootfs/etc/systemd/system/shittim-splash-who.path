@@ -1,0 +1,10 @@
+[Unit]
+Description=Shittim OS: 설정에서 캐릭터를 바꾸면 컷씬 색도 바꾼다
+
+[Path]
+# 파일이 아니라 폴더를 본다: 설정 저장은 새 파일로 바꿔치기(rename)라서 파일 감시는 놓친다
+PathChanged=/home/sensei/.config/shittim
+Unit=shittim-splash-who.service
+
+[Install]
+WantedBy=paths.target

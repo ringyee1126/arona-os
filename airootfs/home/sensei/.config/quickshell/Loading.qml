@@ -7,7 +7,10 @@ import QtQuick
 PanelWindow {
     id: w
     readonly property real s: screen ? screen.height / 1200 : 1
-    readonly property string art: "file:///usr/share/plymouth/themes/shittim/"
+    // 바뀔 캐릭터의 색: arona/ = 파랑, plana/ = 보라. 색 세트가 아직 설치 전이면(tools/apply-splash.sh) 테마의 기존 그림.
+    readonly property string theme: "file:///usr/share/plymouth/themes/shittim/"
+    readonly property string art: theme + (probe.status === Image.Ready ? Arona.wantWho + "/" : "")
+    Image { id: probe; visible: false; source: w.theme + "plana/bar_bg.png" }
     visible: Arona.switching || fade.opacity > 0
     anchors { top: true; bottom: true; left: true; right: true }
     exclusionMode: ExclusionMode.Ignore

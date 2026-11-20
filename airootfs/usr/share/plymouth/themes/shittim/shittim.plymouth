@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Shittim Chest
+Description=Shittim OS boot splash: connecting to the Shittim Chest
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/shittim
+ScriptFile=/usr/share/plymouth/themes/shittim/shittim.script

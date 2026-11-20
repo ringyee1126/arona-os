@@ -163,3 +163,15 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
 - 교체: 설정 → 아로나 → 성격 저장 → `Arona.switching` 2초 동안 `Loading.qml`(Plymouth 테마 그림 재사용)이 덮고 1초째에 `Arona.who`가 바뀐다.
   끝나면 `hello` 대사. 대화 기록은 교체 때 비운다.
 - 블루투스(Britz BT4000 ANC) 연결 끊김: 헤드셋이 꺼져 있어 재현 못 함. 켠 상태에서 `journalctl -b -u bluetooth -f` 를 보며 다시 연결해 원인 확인.
+
+## 프라나 컷씬 색·잠금화면·창 위치 (2026-11-20)
+- 보라색 컷씬: Plymouth 테마에 그림 세트 두 벌 `themes/shittim/arona/`(파랑, 원본) · `plana/`(보라). 테마 폴더 맨 위의 png가 실제로 쓰이는 것.
+  보라 세트는 원본을 색상만 돌린 것: `ffmpeg -i arona/X.png -vf "format=yuva444p10le,hue=h=60,format=rgba" plana/X.png` (원본 그림을 바꾸면 다시 만들 것).
+  `shittim-splash-who`(루트, `shittim-splash-who.path`가 `~/.config/shittim` 변경을 보고 실행 + 부팅 때 한 번)가 성격이 바뀐 때에만
+  세트를 맨 위로 복사하고 `mkinitcpio -P` 한다 (부팅 컷씬은 initramfs 안의 그림을 쓴다). 지금 색은 `themes/shittim/who`.
+  종료 컷씬은 바로, 부팅 컷씬은 initramfs가 다 만들어진 뒤(10~20초)부터 바뀐다. 설치: `sudo bash tools/apply-splash.sh`.
+  ISO로 새로 설치할 때는 두 유닛을 enable 해야 한다 (apply-system.sh가 apply-splash.sh를 부른다).
+- 교체 화면(`Loading.qml`)도 바뀔 캐릭터의 세트를 쓴다.
+- 잠금화면에 아로나가 잠깐 나오던 것: `arona.json`은 FileView가 뒤에서 읽어서 `Arona.who`가 "arona"로 시작했고, 읽힌 뒤의 교체(1초)가
+  잠금화면 밑에서 돌았다. `Arona.qml`의 onCompleted에서 `cfgFile.waitForJob()`으로 다 읽은 뒤 who를 정한다.
+- 새 창이 화면 위로 잘려 뜨던 것: hyprland.lua `keep_top` (window.open + 0.4초 뒤 한 번 더). 뜬 뒤에 사용자가 올리는 것은 그대로 둔다.

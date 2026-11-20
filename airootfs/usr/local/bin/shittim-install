@@ -65,7 +65,13 @@ mount "$ESP" /mnt/boot/efi
 # ---------- 4. copy the live system ----------
 say "싯딤의 상자를 복사하는 중이에요… (몇 분 걸려요)"
 rsync -aAXH --info=progress2 \
-  --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found","/boot/efi/*","/home/sensei/.cache/*"} / /mnt/
+  --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/*","/media/*","/lost+found","/boot/efi/*","/home/sensei/.cache/*"} / /mnt/ 2>/tmp/shittim-rsync.err || {
+  rc=$?; cat /tmp/shittim-rsync.err >&2
+  # 23/24 = 파일 몇 개만 못 옮김 (USB의 깨진 블록 등). 목록을 보여 주고 계속할지 묻는다. 그 밖의 오류는 중단.
+  [[ $rc == 23 || $rc == 24 ]] || die "복사에 실패했어요 (rsync $rc)."
+  read -rp $'\n위 파일들을 복사하지 못했어요. 이 파일들 없이 계속 설치할까요? (y/N): ' ok
+  [[ $ok == [yY] ]] || die "설치를 멈췄어요. USB를 다시 굽고 시도해 주세요."
+}
 # the live image keeps the kernel and microcode on the USB, not in /boot
 B=/run/archiso/bootmnt/arch/boot
 cp "$B/x86_64/vmlinuz-linux" /mnt/boot/

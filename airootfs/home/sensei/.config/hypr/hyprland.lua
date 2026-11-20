@@ -289,7 +289,8 @@ hl.on("window.open", function(w)
 end)
 -- 한/영 키는 Hyprland가 받아서 입력기를 직접 바꾼다. 앱을 거치면(특히 Wine 카카오톡: 글 칸에 입력기가 안 붙은 순간)
 -- 키가 입력기까지 못 가서 씹혔다. 오른쪽 Alt도 위의 kb_options 때문에 Hangul 로 들어온다.
-hl.bind("Hangul", hl.dsp.exec_cmd("fcitx5-remote -t"))
+-- shittim-ime-heal: 카카오톡이 X 입력 포커스를 잃어 영어만 쳐질 때 한/영 키를 누르면 포커스를 되살린다
+hl.bind("Hangul", hl.dsp.exec_cmd("fcitx5-remote -t; shittim-ime-heal"))
 -- Super + D = 바탕화면 보기 (빈 작업 공간 9로 갔다가 다시 누르면 돌아옴)
 hl.bind(mod .. " + D", function()
     local ws = hl.get_active_workspace()

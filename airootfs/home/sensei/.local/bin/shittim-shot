@@ -15,9 +15,12 @@ pause() {
 shot() {
   dir="$(xdg-user-dir PICTURES)/스크린샷"; mkdir -p "$dir"
   f="$dir/$(date +%Y-%m-%d_%H-%M-%S).png"
-  if [[ $1 == full ]]; then grim "$f"
+  # 전체 화면: 캡처 메뉴가 화면에서 사라질 시간을 준다 (바로 찍으면 메뉴가 같이 찍혔다)
+  if [[ $1 == full ]]; then sleep 0.25; grim "$f"
   else g=$(slurp) || exit 0; grim -g "$g" "$f"; fi || { say "스크린샷" "찍지 못했어요."; exit 1; }
-  wl-copy --type image/png < "$f"
+  # 클립보드: png·bmp 등 여러 형식으로 (Ctrl+V 로 어느 앱에나 사진으로 붙는다). 도우미가 없으면 png 만.
+  if command -v shittim-clip-image >/dev/null; then setsid shittim-clip-image "$f" >/dev/null 2>&1 &
+  else wl-copy --type image/png < "$f"; fi
   pw-play /usr/share/sounds/freedesktop/stereo/camera-shutter.oga 2>/dev/null &
   say -i "$f" "스크린샷 저장" "${f/#$HOME/\~}"
 }

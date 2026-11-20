@@ -11,7 +11,7 @@ PanelWindow {
     visible: Ui.musicOpen
     anchors { bottom: true; left: true }
     margins { left: 40 * s; bottom: 12 * s }
-    implicitWidth: 440 * s; implicitHeight: 104 * s
+    implicitWidth: 440 * s; implicitHeight: 116 * s
     exclusiveZone: 0
     color: "transparent"
     WlrLayershell.layer: WlrLayer.Top
@@ -23,6 +23,7 @@ PanelWindow {
     property bool paused: false
     property int pos: 0
     property int count: 0
+    property real progress: 0   // 0~1, 0.5초마다 mpv에 물어본다
     readonly property bool playing: mpv.running && sock.connected && !paused && count > 0
 
     function send(cmd, id) { sock.write(JSON.stringify(id ? { command: cmd, request_id: id } : { command: cmd }) + "\n"); sock.flush() }
@@ -33,9 +34,10 @@ PanelWindow {
         id: mpv
         running: Ui.musicOpen
         command: ["sh", "-c", music.dirCmd + 'exec mpv --no-video --no-terminal --no-config --loop-playlist=inf --input-ipc-server="$0" "$d"', music.sockPath]
-        onRunningChanged: if (!running) { sock.connected = false; music.count = 0; music.title = "" }
+        onRunningChanged: if (!running) { sock.connected = false; music.count = 0; music.title = ""; music.progress = 0 }
     }
     Timer { interval: 200; repeat: true; running: mpv.running && !sock.connected; onTriggered: sock.connected = true }   // 소켓이 생길 때까지
+    Timer { interval: 500; repeat: true; running: music.visible && sock.connected; onTriggered: music.send(["get_property", "percent-pos"], 8) }
     Socket {
         id: sock
         path: music.sockPath
@@ -48,6 +50,8 @@ PanelWindow {
                 let m; try { m = JSON.parse(line) } catch (e) { return }
                 if (m.request_id === 9) {   // ⏮: 시작한 지 3초 안이면(= 연달아 두 번 누름 포함) 이전 곡, 아니면 처음부터
                     if (m.data < 3) music.go(-1); else music.send(["seek", 0, "absolute"])
+                } else if (m.request_id === 8) {
+                    music.progress = (m.data || 0) / 100
                 } else if (m.event === "property-change") {
                     if (m.name === "media-title") music.title = (m.data || "").replace(/\.(mp3|flac|ogg|opus|m4a|aac|wav|wma|webm|mp4|mkv)$/i, "")
                     else if (m.name === "pause") music.paused = !!m.data
@@ -123,6 +127,13 @@ PanelWindow {
             Ico { kind: "prev"; onClicked: music.send(["get_property", "time-pos"], 9) }
             Ico { kind: music.playing ? "pause" : "play"; onClicked: music.toggle() }
             Ico { kind: "next"; onClicked: music.go(1) }
+        }
+
+        // 진행 막대
+        Rectangle {
+            x: 20 * music.s; y: 60 * music.s; width: parent.width - 2 * x; height: 3 * music.s; radius: height / 2
+            color: "#55FFFFFF"
+            Rectangle { width: parent.width * music.progress; height: parent.height; radius: parent.radius; color: "white" }
         }
 
         // 재생 중에만 움직이는 막대 (실제 음량과는 무관)

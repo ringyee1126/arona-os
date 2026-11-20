@@ -179,7 +179,7 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
 ## 절전 컷씬·음악 대시보드 (2026-11-20)
 - **보라색 컷씬이 안 나오면 `sudo bash ~/shittim-os/tools/apply-splash.sh` 가 아직 안 돌아간 것이다** (`/usr/share/plymouth/themes/shittim/plana/` 가 없으면 미설치).
   교체·절전 컷씬(`Loading.qml`)도 그 폴더의 그림을 쓴다.
-- 절전: 대사(4초) → `Ui.sleeping` 으로 `Loading.qml` 컷씬(4.5초) → 잠금 + `systemctl suspend` (`PowerMenu.qml`의 sleepCut/sleepGo/wake 타이머).
+- 절전: 대사(4초) → `Ui.sleeping` 으로 `Loading.qml` 컷씬(1.5초) → 잠금 + `systemctl suspend` (`PowerMenu.qml`의 sleepCut/sleepGo/wake 타이머).
   잠들기 전 잠금화면이 안 보이게 `Lock.qml`이 `Ui.sleeping` 동안 어둡게 덮고, 벽시계가 건너뛰면(깨어남) 걷는다.
 - 음악: 독의 "음악" = `Ui.musicOpen` 켜고 끄기 (`quickshell ipc call music toggle`). `Music.qml`이 `mpv --input-ipc-server`
   (`$XDG_RUNTIME_DIR/shittim-mpv.sock`)로 `~/음악/재생목록` 을 이름 순서로 반복 재생한다. 끄면 mpv도 끝난다.

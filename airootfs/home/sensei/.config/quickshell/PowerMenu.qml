@@ -35,11 +35,11 @@ PanelWindow {
         if (a.key === "sleep") return sleepCut.start()
         Quickshell.execDetached(["sh", "-c", "sleep 4; exec \"$@\"", "sh"].concat(a.cmd))
     }
-    // 절전: 대사(4초) → 부팅 컷씬(4.5초, Loading.qml) → 잠그고 절전. 잠금화면은 깨어난 뒤에야 보인다:
+    // 절전: 대사(4초) → 부팅 컷씬(1.5초, Loading.qml) → 잠그고 절전. 잠금화면은 깨어난 뒤에야 보인다:
     // Ui.sleeping 동안 Lock.qml이 잠금화면을 어둡게 덮고, 시계가 건너뛰면(= 깨어남) 걷는다. 절전이 실패해도 15초 뒤에는 걷는다.
     Timer { id: sleepCut; interval: 4000; onTriggered: { Ui.sleeping = true; sleepGo.start() } }
     Timer {
-        id: sleepGo; interval: 4800
+        id: sleepGo; interval: 1800
         onTriggered: { Quickshell.execDetached(["sh", "-c", "quickshell ipc call lock lock; sleep 1; systemctl suspend"]); wake.t0 = wake.last = Date.now(); wake.start() }
     }
     Timer {

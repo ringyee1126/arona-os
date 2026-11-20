@@ -14,3 +14,11 @@ cups                  # 인쇄
 system-config-printer # 프린터 추가 화면
 linux-headers         # 내장 스피커 드라이버 모듈 빌드 (shittim-speaker-rebuild)
 pahole                # 위와 같음 (커널 모듈 빌드 도구)
+# 2026-11-20 친구 노트북(GIGABYTE 게이밍: Intel/AMD 내장 + NVIDIA 외장)용. 해당 장치가 없는 기종에서는 쓰이지 않는다
+nvidia-open           # NVIDIA 드라이버 (GTX 16xx / RTX 20 이후). 없으면 nouveau라 게임·절전이 불안정
+nvidia-utils          # 위 드라이버의 OpenGL/Vulkan
+lib32-nvidia-utils    # Steam/Proton 32비트
+nvidia-prime          # prime-run: 외장 그래픽으로 실행 (Steam 실행 옵션: prime-run %command%)
+vulkan-intel          # Intel 내장 그래픽 Vulkan
+lib32-vulkan-intel    # 위와 같음, 32비트
+intel-media-driver    # Intel 내장 그래픽 동영상 가속

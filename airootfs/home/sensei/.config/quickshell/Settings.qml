@@ -475,10 +475,10 @@ FloatingWindow {
                         readonly property var d: modelData
                         readonly property bool busy: d.pairing || d.state === BluetoothDeviceState.Connecting || d.state === BluetoothDeviceState.Disconnecting
                         width: parent.width
-                        // 한 번에 안 붙는 기기가 많다(응답 없음 = page timeout, 붙자마자 끊김): 누르면 세 번까지 알아서 다시 건다
+                        // 한 번에 안 붙는 기기가 많다(응답 없음 = page timeout, 붙자마자 끊김): 누르면 다섯 번까지 알아서 다시 건다 (IB-IX7: 켜진 상태에서도 4번 실패 뒤 5번째에 붙었다)
                         property int tries: 0
                         property bool failed: false
-                        function go() { failed = false; tries = 3; d.connect() }
+                        function go() { failed = false; tries = 5; d.connect() }
                         Timer { id: retry; interval: 1000; onTriggered: if (!bd.d.connected) bd.d.connect() }
                         Connections {
                             target: bd.d

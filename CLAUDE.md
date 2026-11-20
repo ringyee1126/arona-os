@@ -201,6 +201,8 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
 ## 블루투스 연결이 잘 안 됨 (2026-11-21)
 - 어댑터: MediaTek MT7922 (USB 13d3:3576, btusb). 기록에 남은 실패는 전부 `br-connection-page-timeout`(기기가 응답 없음,
   bluetoothd 로그에는 "Unable to get Hands-Free ... Host is down"). 시험할 때 기기가 켜져 있었는지는 모른다 → **원인 미확정.**
-- 한 것 1: 설정 → 블루투스의 "연결"이 세 번까지 알아서 다시 건다(붙자마자 끊겨도), 다 실패하면 안내 문구 (`Settings.qml` btPage의 `go()`/`tries`).
+- 한 것 1: 설정 → 블루투스의 "연결"이 다섯 번까지 알아서 다시 건다(붙자마자 끊겨도), 다 실패하면 안내 문구 (`Settings.qml` btPage의 `go()`/`tries`).
 - 한 것 2 (루트, **사용자가 실행해야 적용**): `sudo bash tools/fix-bluetooth.sh` = btusb USB 절전 끄기 (`/etc/modprobe.d/shittim-bluetooth.conf`).
 - 그래도 안 되면: 기기를 켠 채 `journalctl -b -u bluetooth -f` 를 보며 연결. "붙었다가 바로 끊김"이 인증 실패(키 불일치)면 설정에서 삭제 후 다시 페어링.
+- 2026-11-21 00:56 실측 (IB-IX7 켠 상태, 절전 끄기 스크립트 실행 전): page timeout 4번(약 9초 간격) 뒤 5번째에 연결, 이후 1분 넘게 유지·소리 출력 잡힘.
+  기기가 켜져 있어도 호출을 놓친다 = 노트북 쪽 문제일 가능성이 높다. 재시도를 5번으로 늘림. `fix-bluetooth.sh` 실행 뒤 한 번에 붙는지 확인할 것.

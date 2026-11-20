@@ -1,0 +1,10 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = hyprland
+
+[Action]
+Description = Rebuilding the Shittim title bar (hyprbars) for the new Hyprland...
+When = PostTransaction
+Exec = /usr/local/bin/shittim-hyprbars-rebuild

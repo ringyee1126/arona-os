@@ -1,0 +1,2 @@
+# ponytail: live ISO only, passwordless sudo. The installed system will ask for a password.
+sensei ALL=(ALL:ALL) NOPASSWD: ALL

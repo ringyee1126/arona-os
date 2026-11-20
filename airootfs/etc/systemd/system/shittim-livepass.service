@@ -1,0 +1,11 @@
+[Unit]
+Description=Live USB only: give sensei the temporary password "arona" so the lock screen can be unlocked
+ConditionKernelCommandLine=archisobasedir
+After=systemd-sysusers.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'echo sensei:arona | chpasswd'
+
+[Install]
+WantedBy=multi-user.target

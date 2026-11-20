@@ -29,8 +29,11 @@
    - 새로 설치한 pacman 패키지 → 소스 `packages.extra`에 추가 (주석으로 이유 한 줄)
    - 설정을 고쳤으면 소스에도 반영: `rsync -a ~/.config/quickshell/ ~/shittim-os/airootfs/home/sensei/.config/quickshell/`
    - 소스가 git 저장소면 커밋. **API 키·비밀번호가 담긴 파일은 커밋하지 말 것.**
-4. ISO 재빌드(`build.sh`)는 원래 Windows의 WSL Arch에서 돌리도록 돼 있다(경로 `/mnt/c/...` 가정).
-   노트북에서 빌드하려면 `archiso` 설치 후 경로를 맞춰야 함. 재설치가 필요한 변경(설치 스크립트, 파티션, 부트로더)만 ISO로.
+4. ISO 빌드: 터미널에서 `sudo bash ~/shittim-os/build.sh` → `~/arona-os-<날짜>-x86_64.iso`. **커밋된 파일만 들어간다.**
+   이 저장소가 곧 archiso 프로필이다 (`profiledef.sh`, `packages.x86_64` + `packages.extra`, `pacman.conf`, `efiboot/` `syslinux/` `grub/`).
+   원본 소스 zip은 찾지 못해서, 2026-11-20에 archiso v92 `releng` 프로필 + 설치 USB(11-17 빌드) 이미지에서 꺼낸 파일로 다시 만들었다
+   (`packages.x86_64` = 그 이미지에서 직접 고른 패키지 194개). 이미지에 있던 Claude Code 바이너리는 넣지 않았다.
+   재설치가 필요한 변경(설치 스크립트, 파티션, 부트로더)만 ISO로.
 
 ## 설치 때 생긴 일 (2026-11-18)
 - 설치 USB의 squashfs 블록 하나(0xa32e0e)가 깨져 있어 아래 두 파일을 빼고 설치했다. **USB는 재사용 전 다시 구워야 함.**

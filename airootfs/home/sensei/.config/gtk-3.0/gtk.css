@@ -1,0 +1,90 @@
+/* Shittim (싯딤의 상자) look for GTK 3 apps - Thunar, Mousepad, Evince, Blueman, LibreOffice …
+   Approved mockup: mockups/windows.html ④. Layered on top of Adwaita. */
+@define-color sky #2FA8E1;
+@define-color sky_deep #1C86C2;
+@define-color sky_soft #DDEFF9;
+@define-color sky_line #CBE4F3;
+@define-color ink #1E3A52;
+@define-color ink_dim #5A7A94;
+@define-color halo #F7C63C;
+@define-color theme_selected_bg_color #2FA8E1;
+@define-color theme_selected_fg_color #ffffff;
+@define-color theme_bg_color #F6FAFD;
+@define-color theme_fg_color #1E3A52;
+@define-color theme_base_color #ffffff;
+@define-color theme_text_color #1E3A52;
+
+window, .background, dialog { background-color: #F6FAFD; color: @ink; }
+label { color: inherit; }
+
+/* apps that draw their own title bar: same ink bar and round – □ ✕ as the rest of the OS */
+headerbar, .titlebar:not(headerbar) {
+  background: @ink; color: #ffffff; border: none; box-shadow: none; min-height: 44px;
+}
+headerbar:backdrop { background: #2A4A66; }
+headerbar .title { color: #ffffff; font-weight: 800; }
+headerbar .subtitle { color: #8FC9EA; }
+headerbar button { color: #ffffff; background: none; border: none; box-shadow: none; text-shadow: none; -gtk-icon-shadow: none; }
+headerbar button:hover { background: alpha(#ffffff, 0.14); }
+headerbar button.titlebutton { min-width: 26px; min-height: 26px; padding: 0; margin: 0 3px; border-radius: 50%; }
+headerbar button.titlebutton.minimize { background: #3D5A74; }
+headerbar button.titlebutton.maximize { background: @sky; }
+headerbar button.titlebutton.close { background: #FF6B81; }
+headerbar button.titlebutton:hover { box-shadow: 0 0 0 3px alpha(#ffffff, 0.25); }
+headerbar entry { background: alpha(#ffffff, 0.12); color: #ffffff; border-color: transparent; }
+
+/* lists, icon views, selection */
+.view, iconview, treeview.view, textview text { background-color: #ffffff; color: @ink; }
+.view:selected, iconview:selected, treeview.view:selected, row:selected, *:selected, selection {
+  background-color: @sky; color: #ffffff;
+}
+treeview.view:hover, row:hover { background-color: #EEF8FE; }
+
+/* side panes (Thunar places, file chooser) */
+.sidebar, .sidebar.view, .sidebar treeview.view, placessidebar, placessidebar list, .thunar .sidebar {
+  background-color: #E3F2FB; color: @ink; border-color: @sky_line;
+}
+.sidebar treeview.view:selected, placessidebar row:selected { background-color: @sky; color: #ffffff; }
+
+/* buttons */
+button { border-radius: 10px; }
+button:not(.flat):not(.titlebutton) {
+  background-image: none; background-color: #E6EEF4; border: 1px solid @sky_line; color: @ink;
+  box-shadow: none; text-shadow: none; -gtk-icon-shadow: none;
+}
+button:not(.flat):not(.titlebutton):hover { background-color: @sky_soft; }
+button:not(.flat):not(.titlebutton):active, button:checked { background-color: @sky; color: #ffffff; border-color: @sky; }
+button.suggested-action, button.default {
+  background-image: linear-gradient(#FFE66B, @halo); color: @ink; border-color: #E0AE1F; font-weight: 800;
+}
+button.destructive-action { background-image: none; background-color: #FF6B81; color: #ffffff; border-color: #FF6B81; }
+button.flat:hover { background-color: @sky_soft; }
+
+/* path bar (Thunar's "선생님 › 다운로드") */
+.path-bar button { background-color: @sky_soft; color: @ink; font-weight: 800; border: none; border-radius: 6px; }
+.path-bar button:checked { background-color: @sky; color: #ffffff; }
+
+/* text fields */
+entry {
+  border-radius: 10px; border: 2px solid @sky_line; background-color: #F7FBFE; color: @ink;
+  box-shadow: none; min-height: 30px;
+}
+entry:focus { border-color: @sky; box-shadow: none; }
+
+/* toolbars, menus, status bars */
+toolbar, .toolbar, .primary-toolbar, menubar { background-color: #ffffff; border-bottom: 1px solid @sky_line; }
+menu, .menu, .context-menu { background-color: #ffffff; border: 1px solid @sky_line; border-radius: 12px; padding: 6px; }
+menuitem { padding: 8px 12px; border-radius: 8px; color: @ink; }
+menu menuitem:hover, .menu menuitem:hover, .context-menu menuitem:hover { background-color: @sky; color: #ffffff; }
+menubar > menuitem:hover { background-color: @sky_soft; color: @ink; box-shadow: none; }
+statusbar { background-color: #ffffff; color: @ink_dim; border-top: 1px solid @sky_line; }
+separator { background-color: #EDF4F9; }
+tooltip, tooltip.background { background-color: @ink; color: #ffffff; border-radius: 8px; }
+
+/* small controls */
+scrollbar slider { background-color: alpha(@sky, 0.55); border-radius: 8px; min-width: 6px; min-height: 6px; }
+scrollbar slider:hover, scrollbar slider:active { background-color: @sky; }
+check:checked, radio:checked { background-image: none; background-color: @sky; color: #ffffff; border-color: @sky; }
+switch:checked { background-color: @sky; border-color: @sky; }
+progressbar progress, scale highlight, levelbar block.filled { background-image: none; background-color: @sky; border-color: @sky; }
+notebook > header tab:checked { box-shadow: inset 0 -3px @sky; }

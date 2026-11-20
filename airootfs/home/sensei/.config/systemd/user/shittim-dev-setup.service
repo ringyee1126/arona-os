@@ -1,0 +1,12 @@
+[Unit]
+Description=Shittim OS first-login setup: Claude Code + VS Code extensions
+ConditionKernelCommandLine=!archisobasedir
+ConditionPathExists=!%h/.config/shittim/dev-setup-done
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/shittim-dev-setup
+
+[Install]
+WantedBy=default.target

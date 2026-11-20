@@ -94,7 +94,9 @@ sed -i "/^HOOKS=/ s/ kms / kms plymouth /" /etc/mkinitcpio.conf   # boot splash
 mkinitcpio -P >/dev/null
 
 # boot loader: GRUB (keeps the kernel on btrfs, so the small shared EFI partition only gets grubx64.efi)
-sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash loglevel=3"/; s/^#\?GRUB_TIMEOUT=.*/GRUB_TIMEOUT=2/' /etc/default/grub
+# 메뉴를 숨기고(Esc를 누르면 나옴) 커서·부팅 글자를 끈다 - 컷씬만 보이게
+sed -i -e 's/^#\?GRUB_TIMEOUT=.*/GRUB_TIMEOUT=1/' -e 's/^#\?GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=hidden/' \
+       -e 's/^GRUB_CMDLINE_LINUX_DEFAULT=.*/GRUB_CMDLINE_LINUX_DEFAULT="quiet splash loglevel=3 rd.udev.log_level=3 systemd.show_status=false vt.global_cursor_default=0"/' /etc/default/grub
 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ShittimOS --recheck >/dev/null
 grub-mkconfig -o /boot/grub/grub.cfg >/dev/null 2>&1
 
@@ -105,6 +107,8 @@ btrfs -q subvolume delete /.snapshots
 mkdir /.snapshots && mount /.snapshots && chmod 750 /.snapshots
 sed -i 's/^TIMELINE_CREATE=.*/TIMELINE_CREATE="no"/; s/^NUMBER_LIMIT=.*/NUMBER_LIMIT="10"/' /etc/snapper/configs/root
 systemctl enable grub-btrfsd.service >/dev/null 2>&1 || true
+# 설치된 시스템에서만 켠다 (라이브 USB에서는 initramfs를 다시 만들면 안 된다): 캐릭터에 맞춘 컷씬 색, 인쇄
+systemctl enable shittim-splash-who.service shittim-splash-who.path cups.socket >/dev/null 2>&1 || true
 # 설치 USB용 설정(pacman 열쇠고리를 메모리에 두는 것)은 설치된 시스템에 남기지 않는다: 남으면 다시 시작할 때마다
 # 열쇠고리가 비워져 pacman이 "키를 가져올 수 없음"으로 실패한다.
 rm -f /etc/systemd/system/etc-pacman.d-gnupg.mount

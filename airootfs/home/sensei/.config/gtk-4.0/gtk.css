@@ -1,0 +1,35 @@
+/* Shittim (싯딤의 상자) look for GTK 4 apps - file-roller, pavucontrol …
+   Approved mockup: mockups/windows.html ④. GTK 4 and libadwaita build their theme from these named colours. */
+@define-color accent_color #1C86C2;
+@define-color accent_bg_color #2FA8E1;
+@define-color accent_fg_color #ffffff;
+@define-color window_bg_color #F6FAFD;
+@define-color window_fg_color #1E3A52;
+@define-color view_bg_color #ffffff;
+@define-color view_fg_color #1E3A52;
+@define-color headerbar_bg_color #1E3A52;
+@define-color headerbar_fg_color #ffffff;
+@define-color headerbar_backdrop_color #2A4A66;
+@define-color headerbar_border_color #1E3A52;
+@define-color sidebar_bg_color #E3F2FB;
+@define-color sidebar_fg_color #1E3A52;
+@define-color card_bg_color #ffffff;
+@define-color card_fg_color #1E3A52;
+@define-color popover_bg_color #ffffff;
+@define-color popover_fg_color #1E3A52;
+@define-color dialog_bg_color #F6FAFD;
+@define-color dialog_fg_color #1E3A52;
+@define-color theme_selected_bg_color #2FA8E1;
+@define-color theme_selected_fg_color #ffffff;
+
+/* round – □ ✕ like the rest of the OS */
+windowcontrols > button { min-width: 26px; min-height: 26px; padding: 0; margin: 0 3px; border-radius: 50%; color: #ffffff; }
+windowcontrols > button > image { background: none; }
+windowcontrols > button.minimize { background-color: #3D5A74; }
+windowcontrols > button.maximize { background-color: #2FA8E1; }
+windowcontrols > button.close { background-color: #FF6B81; }
+windowcontrols > button:hover { box-shadow: 0 0 0 3px alpha(#ffffff, 0.25); }
+
+button.suggested-action { background-image: linear-gradient(#FFE66B, #F7C63C); color: #1E3A52; font-weight: 800; }
+entry, text { caret-color: #2FA8E1; }
+entry:focus-within { outline-color: #2FA8E1; }

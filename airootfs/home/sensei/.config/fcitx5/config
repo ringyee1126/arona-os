@@ -1,0 +1,12 @@
+[Hotkey]
+# 한/영 전환: 한/영 키(Hangul) 또는 오른쪽 Alt(노트북에 따라 한/영 키가 이것으로 들어옴)
+EnumerateWithTriggerKeys=True
+
+[Hotkey/TriggerKeys]
+0=Hangul
+1=Alt_R
+
+[Behavior]
+# 윈도우처럼 한/영 상태를 모든 창이 같이 쓴다
+ShareInputState=All
+ShowInputMethodInformation=True

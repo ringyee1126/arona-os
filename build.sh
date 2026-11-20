@@ -10,6 +10,10 @@ u() { sudo -u "$SUDO_USER" "$@"; }     # 저장소는 사용자 것이라 git은
 command -v mkarchiso >/dev/null || pacman -S --needed --noconfirm archiso
 rm -rf "$W"; mkdir -p "$P"
 u git -C "$SRC" archive HEAD | tar -x -C "$P"
+# mkarchiso는 airootfs의 실행 권한을 버린다(전부 644) → git에서 실행 파일인 것을 profiledef의 file_permissions에 적어 준다
+u git -C "$SRC" ls-files -s airootfs | awk '$1==100755{print substr($4,9)}' | while read -r f; do
+  o=0:0; [[ $f == /home/sensei/* ]] && o=1000:1000; echo "file_permissions[\"$f\"]=\"$o:755\""
+done >> "$P/profiledef.sh"
 sed 's/#.*//' "$SRC/packages.extra" | xargs -n1 >> "$P/packages.x86_64"
 # hyprbars(제목 표시줄): pacman 훅(shittim-hyprbars.hook)이 이미지 안에서 빌드하는데 거기에는 인터넷이 없어 소스를 미리 넣어 둔다
 git clone -q https://github.com/hyprwm/hyprland-plugins.git "$P/airootfs/usr/local/src/hyprland-plugins"

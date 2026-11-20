@@ -15,6 +15,7 @@ ShellRoot {
     Chat { screen: Quickshell.screens[0] }
     PowerMenu { screen: Quickshell.screens[0] }
     Switcher { screen: Quickshell.screens[0] }
+    Music { screen: Quickshell.screens[0] }
     Capture { screen: Quickshell.screens[0] }
     SnapPreview { screen: Quickshell.screens[0] }
     // Super+I (설정) / Super+A (아로나와 대화); "settings open bluetooth" opens a given page.
@@ -39,6 +40,10 @@ ShellRoot {
         function onReplyTextChanged() { if (Arona.replyText) Sfx.play("receive") }
         function onReplyErrorChanged() { if (Arona.replyError) Sfx.play("error") }
         function onSwitchingChanged() { if (!Arona.switching) Arona.react("hello") }   // 교체가 끝나면 새 캐릭터가 인사
+    }
+    IpcHandler {   // 음악 대시보드: quickshell ipc call music toggle
+        target: "music"
+        function toggle(): void { Ui.musicOpen = !Ui.musicOpen }
     }
     IpcHandler {
         target: "chat"

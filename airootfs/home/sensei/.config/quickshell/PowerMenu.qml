@@ -23,7 +23,7 @@ PanelWindow {
 
     readonly property var actions: [
         { key: "lock", name: "잠금", icon: "lock", cmd: ["quickshell", "ipc", "call", "lock", "lock"] },
-        { key: "sleep", name: "절전", icon: "moon", cmd: ["sh", "-c", "quickshell ipc call lock lock; sleep 1; systemctl suspend"] },
+        { key: "sleep", name: "절전", icon: "moon", cmd: [] },
         { key: "reboot", name: "다시 시작", icon: "restart", cmd: ["systemctl", "reboot"], confirm: true },
         { key: "off", name: "시스템 종료", icon: "power", cmd: ["systemctl", "poweroff"], confirm: true }
     ]
@@ -32,7 +32,21 @@ PanelWindow {
         Ui.menuOpen = false
         if (a.key === "lock") return Quickshell.execDetached(a.cmd)
         Arona.react("power-" + a.key)   // 인사를 끝까지 하고 나서 끈다
+        if (a.key === "sleep") return sleepCut.start()
         Quickshell.execDetached(["sh", "-c", "sleep 4; exec \"$@\"", "sh"].concat(a.cmd))
+    }
+    // 절전: 대사(4초) → 부팅 컷씬(4.5초, Loading.qml) → 잠그고 절전. 잠금화면은 깨어난 뒤에야 보인다:
+    // Ui.sleeping 동안 Lock.qml이 잠금화면을 어둡게 덮고, 시계가 건너뛰면(= 깨어남) 걷는다. 절전이 실패해도 15초 뒤에는 걷는다.
+    Timer { id: sleepCut; interval: 4000; onTriggered: { Ui.sleeping = true; sleepGo.start() } }
+    Timer {
+        id: sleepGo; interval: 4800
+        onTriggered: { Quickshell.execDetached(["sh", "-c", "quickshell ipc call lock lock; sleep 1; systemctl suspend"]); wake.t0 = wake.last = Date.now(); wake.start() }
+    }
+    Timer {
+        id: wake; interval: 500; repeat: true
+        property real t0: 0
+        property real last: 0
+        onTriggered: { const n = Date.now(); if (n - last > 2500 || n - t0 > 15000) { Ui.sleeping = false; stop() } last = n }
     }
 
     // volume (same default output as the top bar) and backlight (absent on external monitors / the VM)

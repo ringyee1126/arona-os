@@ -79,6 +79,7 @@ Scope {
             id: surface
             color: "#02060C"
             LockView { anchors.fill: parent; ctl: lockRoot; s: surface.screen ? surface.screen.height / 1200 : 1 }
+            Rectangle { anchors.fill: parent; color: "#02070f"; visible: Ui.sleeping }   // 절전 컷씬 뒤 잠들 때까지 잠금화면을 가린다
         }
     }
 }

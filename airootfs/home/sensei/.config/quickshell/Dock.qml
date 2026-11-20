@@ -31,7 +31,7 @@ PanelWindow {
         { name: "Claude", icon: "claude", cmd: ["chromium", "--app=https://claude.ai"] },
         { name: "Claude Code", icon: "claudecode", cmd: ["kitty", "--title", "Claude Code", "-e", "bash", "-lc", "cd ~; claude; exec bash"] },
         { name: "문서", icon: "docs", cmd: ["libreoffice"] },
-        { name: "음악", icon: "music", cmd: ["sh", "-c", "thunar \"$(xdg-user-dir MUSIC)\""] },
+        { name: "음악", icon: "music", cmd: ["music"] },
         { name: "설정", icon: "settings", cmd: ["settings"] },
         { name: "터미널", icon: "terminal", cmd: ["kitty"] },
         { name: "사진", icon: "photos", cmd: ["sh", "-c", "thunar \"$(xdg-user-dir PICTURES)\""] },
@@ -43,6 +43,7 @@ PanelWindow {
     ]
     function launch(app) {
         if (app.cmd[0] === "settings") Ui.settings("toggle")
+        else if (app.cmd[0] === "music") Ui.musicOpen = !Ui.musicOpen   // 음악 대시보드 (Music.qml)
         else if (app.cmd.length) { Arona.react("launch"); Quickshell.execDetached(app.cmd) }
         else Arona.say(Arona.lines["not-ready"])
     }

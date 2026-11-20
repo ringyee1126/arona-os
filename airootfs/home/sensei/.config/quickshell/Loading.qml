@@ -11,7 +11,8 @@ PanelWindow {
     readonly property string theme: "file:///usr/share/plymouth/themes/shittim/"
     readonly property string art: theme + (probe.status === Image.Ready ? Arona.wantWho + "/" : "")
     Image { id: probe; visible: false; source: w.theme + "plana/bar_bg.png" }
-    visible: Arona.switching || fade.opacity > 0
+    readonly property bool on: Arona.switching || Ui.sleeping   // 캐릭터 교체(2초) 또는 절전 직전(4.5초, 부팅 컷씬 길이)
+    visible: on || fade.opacity > 0
     anchors { top: true; bottom: true; left: true; right: true }
     exclusionMode: ExclusionMode.Ignore
     color: "transparent"
@@ -22,7 +23,7 @@ PanelWindow {
         id: fade
         anchors.fill: parent
         color: "#02070f"
-        opacity: Arona.switching ? 1 : 0
+        opacity: w.on ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: 250 } }
         MouseArea { anchors.fill: parent }   // 가려진 동안 뒤의 창이 눌리지 않게
 
@@ -46,8 +47,8 @@ PanelWindow {
             source: w.art + "bar_bg.png"
             Item {   // 2초 동안 차오르는 막대
                 height: parent.height; clip: true
-                width: Arona.switching ? parent.width : 0
-                Behavior on width { enabled: Arona.switching; NumberAnimation { duration: 2000 } }
+                width: w.on ? parent.width : 0
+                Behavior on width { enabled: w.on; NumberAnimation { duration: Ui.sleeping ? 4500 : 2000 } }
                 Image { width: barBg.width; height: barBg.height; source: w.art + "bar_fill.png" }
             }
         }

@@ -8,6 +8,8 @@ Singleton {
     property bool settingsOpen: false
     property string settingsPage: "wifi"     // wifi | bluetooth | sound | display | arona | tasks | about
     property bool chatOpen: false            // MomoTalk with the desktop Arona
+    property bool musicOpen: false           // 왼쪽 아래 음악 대시보드 (Music.qml), 독의 "음악" 버튼
+    property bool sleeping: false            // 절전 직전: 부팅 컷씬(Loading.qml)이 덮고 있다
     property bool menuOpen: false            // top-right ≡: power + quick controls (PowerMenu.qml)
 
     function openSettings(page) { settingsPage = page || settingsPage; settingsOpen = true }

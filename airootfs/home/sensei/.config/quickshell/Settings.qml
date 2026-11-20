@@ -206,7 +206,7 @@ FloatingWindow {
                     MouseArea {
                         onPressedChanged: if (pressed) Sfx.tap()
                         id: tbMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                        onClicked: tb.modelData.a === "max" ? (win.maximized = !win.maximized) : (Ui.settingsOpen = false)
+                        onClicked: tb.modelData.a === "max" ? Quickshell.execDetached(["hyprctl", "dispatch", "hl.dsp.exec_cmd((function() shittim_snap('max') return 'true' end)())"]) : (Ui.settingsOpen = false)
                     }
                 }
             }

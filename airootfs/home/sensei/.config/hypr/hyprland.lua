@@ -67,7 +67,8 @@ hl.window_rule({ name = "shittim-settings", match = { title = "^설정 · 싯딤
 
 -- Windows처럼 모든 창이 떠 있는 창: 제목 표시줄을 끌어 옮기고, 테두리로 크기를 바꾸고, 누른 창이 맨 앞으로 온다.
 -- (타일 창은 항상 떠 있는 창 밑에 깔려서 설정 창이 크롬·디스코드 위에 고정돼 보였다.) 타일로 되돌리려면 이 한 줄을 지운다.
-hl.window_rule({ name = "windows-like-float", match = { class = ".*" }, float = true, center = true })
+-- suppress_event: 앱이 스스로 청하는 최대화는 무시한다. 최대화는 아래 shittim_snap("max") 하나로만 한다 (이유는 거기에).
+hl.window_rule({ name = "windows-like-float", match = { class = ".*" }, float = true, center = true, suppress_event = "maximize" })
 
 -- Title bar with □ ✕ on every app window (mockups/windows.html ④): the hyprbars plugin. build.sh compiles it;
 -- a pacman hook (shittim-hyprbars-rebuild) recompiles it whenever Hyprland is updated.
@@ -80,7 +81,7 @@ local function has_bar(w)
     return true
 end
 if hl.plugin.hyprbars then
-    local maximize = [[hyprctl dispatch 'hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" })']]
+    local maximize = [[hyprctl dispatch 'hl.dsp.exec_cmd((function() shittim_snap("max") return "true" end)())']]
     hl.config({ plugin = { hyprbars = {
         bar_color = "rgb(1e3a52)", ["col.text"] = "rgb(ffffff)", inactive_button_color = "rgb(3d5a74)",
         bar_height = BAR, bar_padding = 14, bar_button_padding = 8, bar_precedence_over_border = true,
@@ -143,31 +144,48 @@ hl.bind(mod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 -- ---------- 창 붙이기 (Windows의 스냅) ----------
 -- 자리 이름: left right top(=최대화) tl tr bl br(=화면 1/4).  zone_box = 그 자리의 x, y, 너비, 높이 (상단 바·독은 피한다)
 local function zone_box(zone, m)
-    local r, g = m.reserved, 12          -- reserved.top / .bottom ...: 상단 바와 독이 차지한 자리
+    local r, g = m.reserved, zone == "max" and 2 or 12   -- reserved.top / .bottom ...: 상단 바와 독이 차지한 자리
     local L, T, R, B = r.left or 0, r.top or 0, r.right or 0, r.bottom or 0
     local x, y = m.x + L + g, m.y + T + g
     local fw, fh = m.width - L - R - g * 2, m.height - T - B - g * 2
     local hw, hh = math.floor((fw - g) / 2), math.floor((fh - g) / 2)
-    if zone == "top" then return x, y, fw, fh end
+    if zone == "top" or zone == "max" then return x, y, fw, fh end
     local right  = zone == "right" or zone == "tr" or zone == "br"
     local bottom = zone == "bl" or zone == "br"
     local full   = zone == "left" or zone == "right"
     return right and (x + hw + g) or x, bottom and (y + hh + g) or y, hw, full and fh or hh
 end
-local snapped = {}     -- 붙이기 전의 창 크기 (창 주소 → {w, h}): 붙인 창을 다시 끌어내면 이 크기로 돌아간다
-function shittim_snap(zone)   -- 전역: hyprctl로 시험할 수 있게
-    local w, m = hl.get_active_window(), hl.get_monitor_at_cursor() or hl.get_active_monitor()
+-- 최대화("top"/"max")도 그냥 화면 가득한 크기·자리다. Hyprland의 최대화 상태는 쓰지 않는다: 그 상태의 창은 위에 떠 있는
+-- 다른 창보다 클릭을 먼저 가져가서(보이기는 위 창이 앞) 큰 창 안의 작은 창이 눌리지 않았다.
+local snapped = {}     -- 붙이기 전의 창 (창 주소 → {w, h, x, y, max}): 다시 끌어내거나 최대화를 풀면 이 크기로 돌아간다
+function shittim_snap(zone, w)   -- 전역: hyprctl로 시험할 수 있게.  w 없으면 활성 창
+    w = w or hl.get_active_window()
+    local m = w and (w.monitor or hl.get_active_monitor())
     if not w or not m then return end
-    if (w.fullscreen or 0) ~= 0 then hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" })) end
-    if zone == "top" then
-        if (w.fullscreen or 0) == 0 then hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" })) end
-        return
+    if zone == "top" then zone = "max" end
+    local sel, o = "address:" .. w.address, snapped[w.address]
+    if (w.fullscreen or 0) ~= 0 then hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle", window = sel })) end
+    if zone == "max" and o and o.max then    -- 최대화된 창을 한 번 더 = 원래대로
+        snapped[w.address] = nil
+        hl.dispatch(hl.dsp.window.resize({ x = o.w, y = o.h, window = sel }))
+        return hl.dispatch(hl.dsp.window.move({ x = o.x, y = o.y, window = sel }))
     end
-    snapped[w.address] = snapped[w.address] or { w = w.size.x, h = w.size.y }
+    o = o or { w = w.size.x, h = w.size.y, x = w.at.x, y = w.at.y }
+    o.max = zone == "max"
+    snapped[w.address] = o
     local x, y, bw, bh = zone_box(zone, m)
     local bar = has_bar(w) and BAR or 0      -- 제목 표시줄은 창 위쪽에 따로 붙는다: 그만큼 내려서 상단 바 밑으로 안 들어가게
-    hl.dispatch(hl.dsp.window.resize({ x = bw, y = bh - bar }))
-    hl.dispatch(hl.dsp.window.move({ x = x, y = y + bar }))
+    hl.dispatch(hl.dsp.window.resize({ x = bw, y = bh - bar, window = sel }))
+    hl.dispatch(hl.dsp.window.move({ x = x, y = y + bar, window = sel }))
+end
+-- 전체 화면 창(게임)도 같은 문제다: 누르면 클릭 순서로는 맨 위로 올라오는데 화면에는 그 위에 뜬 창(설정 등)이 계속 보여서,
+-- 보이는 창을 눌러도 게임이 받는다. 전체 화면 창은 활성이 되거나 눌릴 때마다 맨 밑으로 내려 보이는 순서와 맞춘다.
+local function sink(w)
+    if w and (w.fullscreen or 0) ~= 0 then hl.dispatch(hl.dsp.window.alter_zorder({ mode = "bottom", window = "address:" .. w.address })) end
+end
+hl.on("window.active", sink)
+for _, b in ipairs({ "mouse:272", "mouse:273" }) do   -- 이미 활성인 창을 또 눌러도 올라온다: 뗄 때 다시 내린다
+    hl.bind(b, function() sink(hl.get_active_window()) end, { release = true, non_consuming = true, ignore_mods = true })
 end
 local function half(right) return function() shittim_snap(right and "right" or "left") end end   -- Super + ←/→
 
@@ -228,7 +246,7 @@ hl.timer(function()
 end, { timeout = 50, type = "repeat" })
 hl.bind(mod .. " + left",  half(false))
 hl.bind(mod .. " + right", half(true))
-hl.bind(mod .. " + up", hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }))
+hl.bind(mod .. " + up", function() shittim_snap("max") end)
 hl.bind("ALT + F4", hl.dsp.window.close())
 -- Alt+Tab: 창 목록(Switcher.qml)을 보여주며 고르고, Alt를 떼면 목록을 닫고 그 창을 맨 앞으로.
 -- Alt를 뗀 것은 타이머로 확인한다: 떼는 순간에 거는 단축키(release)는 그 사이 Alt+Tab이 눌렸으면 Hyprland가 실행하지 않는다.

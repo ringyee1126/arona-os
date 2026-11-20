@@ -187,3 +187,13 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
 - 음악: 독의 "음악" = `Ui.musicOpen` 켜고 끄기 (`quickshell ipc call music toggle`). `Music.qml`이 `mpv --input-ipc-server`
   (`$XDG_RUNTIME_DIR/shittim-mpv.sock`)로 `~/음악/재생목록` 을 이름 순서로 반복 재생한다. 끄면 mpv도 끝난다.
   곡 이름 클릭 = 그 폴더 열기. ⏮ = 3초 안이면 이전 곡, 아니면 처음부터. 막대는 무작위(실제 음량 아님).
+
+## 큰 창 위의 작은 창이 안 눌리던 것 (2026-11-21)
+- 원인: 모든 창이 떠 있는 창인데, Hyprland의 최대화/전체 화면 상태인 창은 누르면 클릭 순서로는 맨 위로 올라오면서 화면에는
+  그 위에 뜬 창이 계속 그려진다. 그래서 큰 창을 한 번 누른 뒤에는 그 위에 보이는 작은 창을 눌러도 큰 창이 받았다.
+- 최대화: Hyprland 최대화 상태를 쓰지 않는다. `shittim_snap("max")` = 화면 가득한 크기·자리로 옮기기, 한 번 더 = 원래대로
+  (□ 버튼, 제목 표시줄 두 번 누르기, Super+↑, 위로 끌어 붙이기, 설정 창의 □ 모두 이것). 앱이 청하는 최대화는 `suppress_event = "maximize"`로 무시.
+  그래서 최대화된 창을 누르면 Windows처럼 그 창이 앞으로 오고 작은 창은 뒤로 간다.
+  `hl.dsp.window.fullscreen({ mode = "maximized" })` 를 다시 쓰지 말 것. (최대화 이벤트를 받아 바로 풀고 크기를 바꾸는 방식은 가끔 크기가 안 바뀌었다.)
+- 전체 화면(게임): 활성이 되거나 눌릴 때마다 `alter_zorder bottom` 으로 맨 밑에 둔다 (hyprland.lua `sink`).
+- 시험: /dev/uinput 가상 마우스로 클릭 + `kitty`에서 `printf '\033[?1000h'` 로 어느 창이 클릭을 받았는지 확인. 실제 게임(블루 아카이브)으로는 미확인.

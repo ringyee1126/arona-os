@@ -109,7 +109,6 @@ hl.bind(mod .. " + Space", hl.dsp.exec_cmd("quickshell ipc call launcher toggle"
 hl.bind(mod .. " + L", hl.dsp.exec_cmd("quickshell ipc call lock lock"))
 hl.bind(mod .. " + I", hl.dsp.exec_cmd("quickshell ipc call settings toggle"))
 hl.bind(mod .. " + A", hl.dsp.exec_cmd("quickshell ipc call chat toggle"))
-hl.bind(mod .. " + SHIFT + A", hl.dsp.exec_cmd("shittim-see"))   -- 화면 물어보기: 고른 화면 조각을 아로나에게 보여 준다
 -- 스크린샷·화면 녹화 (~/.local/bin/shittim-shot): 사진은 ~/사진/스크린샷 + 클립보드, 녹화는 ~/비디오/화면 녹화
 hl.bind("Print", hl.dsp.exec_cmd("shittim-shot menu"))   -- 사진/녹화 고르기, 녹화 중이면 녹화 끝
 hl.bind(mod .. " + SHIFT + S", hl.dsp.exec_cmd("shittim-shot region"))

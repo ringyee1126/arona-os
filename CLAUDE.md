@@ -257,7 +257,7 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
   바꾸기 전 파일은 `assets/voice/<who>/*.old` 로 남겨 뒀다(사용자가 새 억양을 확인하면 지워도 된다).
 - 새 컴퓨터에서 목소리 만들기: `bash tools/voice-setup.sh` (환경 설치 → 음성 꺼내기 → 받아쓰기 → 학습 → 대사 만들기; **통째로 돌려 본 적은 없음**).
 
-## 문서·압축·창 크기 점검, 화면 물어보기 (2026-11-22)
+## 문서·압축·창 크기 점검 (2026-11-22)
 - docx·xlsx·pptx·hwp 더블클릭이 Wine 으로 가던 것: `shittim-wine-open --register` 가 만든 "shittimfile" 연결을 Wine(winemenubuilder)이
   리눅스 기본 앱(`~/.local/share/applications/wine-extension-*.desktop`)으로 내보냈다 → Wine → shittim-wine-open → gio open → 다시 Wine.
   고침: 레지스트리 `HKCU\Software\Wine\FileOpenAssociations Enable=N`(--register 에 넣음, 기존 프리픽스에 적용함), 내보낸 파일 59개 삭제,
@@ -267,4 +267,3 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
   (시험: `zipfile.ZipInfo._encodeFilenameFlags` 를 바꿔 CP949 이름·UTF-8 표시 없는 zip 을 만든다). 암호 zip·7z·rar·tar 는 file-roller.
 - 쓸 수 있는 자리(상단 바~독)보다 크게 뜨는 창(VS Code 1920x1080, LibreOffice)은 `keep_top` 이 최대화 자리로 맞춘다(뜬 뒤 0.4초·1.5초에도 확인). `steam_app_*` 는 제외.
 - LibreOffice "오늘의 팁" 창 끔: `~/.config/libreoffice/4/user/registrymodifications.xcu` 의 `ShowTipOfTheDay=false` (이 노트북만; 새 설치는 첫 실행 때 체크를 끄면 된다).
-- 화면 물어보기: Super+Shift+A → `~/.local/bin/shittim-see`(slurp+grim) → `quickshell ipc call arona see <png>` → 대화창이 열리고 Gemini 가 그 화면 조각을 설명한다.

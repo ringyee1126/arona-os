@@ -1,5 +1,0 @@
-#!/bin/sh
-# 화면 물어보기 (Super+Shift+A): 끌어서 고른 화면 조각을 아로나(Gemini)에게 보여 주고 설명을 듣는다. Esc = 취소
-f="$XDG_RUNTIME_DIR/shittim-see.png"
-g=$(slurp) || exit 0
-grim -g "$g" "$f" && quickshell ipc call arona see "$f"

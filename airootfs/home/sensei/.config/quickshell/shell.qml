@@ -55,19 +55,6 @@ ShellRoot {
         target: "arona"
         function react(ev: string): void { Arona.react(ev) }
         function ask(text: string): void { Arona.ask(text) }
-        function see(path: string): void { seeProc.command = ["base64", "-w0", path]; seeProc.running = true }   // 화면 물어보기 (shittim-see)
-    }
-    // 화면 물어보기: Super+Shift+A 로 고른 화면 조각(png)을 Gemini 에 보여 주고 답을 대화창·목소리로 듣는다
-    Process {
-        id: seeProc
-        stdout: StdioCollector {
-            onStreamFinished: {
-                if (!text) return
-                Ui.chatOpen = true
-                Arona.ask("(화면을 보여 줬어요)", [{ inlineData: { mimeType: "image/png", data: text } },
-                    { text: "내 화면의 이 부분을 보여 줄게. 무엇인지 짧게 설명해 줘. 글이 있으면 핵심만 요약하고, 오류나 질문이 보이면 해결 방법이나 답을 알려 줘." }])
-            }
-        }   // 시험용: quickshell ipc call arona ask "…" (답이 대화창·목소리로 나온다)
     }
     // 창이 하나도 없는 바탕화면을 5분 보고 있으면 말을 건다. 자리를 비웠을 때 계속 떠들지 않게 연속 3번까지만.
     property int idleSaid: 0

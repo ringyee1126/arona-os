@@ -262,7 +262,7 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
   리눅스 기본 앱(`~/.local/share/applications/wine-extension-*.desktop`)으로 내보냈다 → Wine → shittim-wine-open → gio open → 다시 Wine.
   고침: 레지스트리 `HKCU\Software\Wine\FileOpenAssociations Enable=N`(--register 에 넣음, 기존 프리픽스에 적용함), 내보낸 파일 59개 삭제,
   `mimeapps.list` 에 문서 형식 → LibreOffice. **wine-extension-*.desktop 이 다시 생기면 이 설정이 풀린 것.**
-- hwp/hwpx: LibreOffice 확장 H2Orestart 가 필요하고 Java 가 있어야 한다. `sudo pacman -S --needed jre-openjdk-headless` 뒤 `bash tools/setup-hwp.sh`. **사용자가 실행해야 적용, 미확인.**
+- hwp/hwpx: LibreOffice 확장 H2Orestart 가 필요하고 Java 가 있어야 한다. `sudo pacman -S --needed jre-openjdk-headless` 뒤 `bash tools/setup-hwp.sh`. 이 노트북에는 적용됨: 공개 견본 hwp(5.0, 표·그림 포함)가 더블클릭 경로로 Writer 에 열리는 것 확인 (2026-11-22). hwpx 는 미확인.
 - 압축: 더블클릭 = `~/.local/bin/shittim-extract`. zip 은 직접 푼다 - Windows(한국어)에서 만든 zip 은 이름이 CP949 라 file-roller·bsdtar 로는 한글이 깨졌다
   (시험: `zipfile.ZipInfo._encodeFilenameFlags` 를 바꿔 CP949 이름·UTF-8 표시 없는 zip 을 만든다). 암호 zip·7z·rar·tar 는 file-roller.
 - 쓸 수 있는 자리(상단 바~독)보다 크게 뜨는 창(VS Code 1920x1080, LibreOffice)은 `keep_top` 이 최대화 자리로 맞춘다(뜬 뒤 0.4초·1.5초에도 확인). `steam_app_*` 는 제외.

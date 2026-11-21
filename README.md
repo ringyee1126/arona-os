@@ -6,8 +6,7 @@ Arch Linux + Hyprland + Quickshell 로 만든 개인용 데스크톱. 이 저장
 
 ISO 는 3GB 가 넘어 [Releases](../../releases) 에 조각 2개로 올라가 있다. 둘 다 받아 한 폴더에 두고 합친다.
 
-- Windows (명령 프롬프트): `copy /b arona-os-*.iso.part1 + arona-os-*.iso.part2 arona-os.iso`
-- Linux / macOS: `cat arona-os-*.iso.part1 arona-os-*.iso.part2 > arona-os.iso`
+합치는 명령(파일 이름 포함)은 각 릴리스 설명에 적혀 있다. Windows 는 `copy /b 조각1 + 조각2 arona-os.iso`, Linux / macOS 는 `cat 조각1 조각2 > arona-os.iso`.
 
 합친 파일이 맞는지는 릴리스에 적힌 SHA-256 과 비교한다 (Windows: `certutil -hashfile arona-os.iso SHA256`, Linux: `sha256sum arona-os.iso`).
 

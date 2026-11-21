@@ -24,9 +24,11 @@ def clean(text):
     t = re.sub(r"\[\[[^\]]*\]\]|[*_`#>|~^]+", " ", t)
     t = re.sub(r"[^\w\s가-힣.,!?…~'\"%:()\-+/]", " ", t)           # 그림 문자 등
     t = t.replace("…", "... ")
+    # "…하실 거예요, 선생님?" 은 묻는 말이 쉼표 앞에 있다: "…하실 거예요? 선생님?" 으로 읽혀야 끝이 올라간다 (한 문장으로 유지)
+    t = re.sub(r",\s*(선생님)\s*\?", r"?ZZJOINZZ\1?", t)
     parts = re.split(r"(?<=[.!?。])\s+|\n+", t)
     out = []
-    for p in (re.sub(r"\s+", " ", p).strip() for p in parts):
+    for p in (re.sub(r"\s+", " ", p).strip().replace("ZZJOINZZ", " ") for p in parts):
         if not re.search(r"[\w가-힣]", p): continue
         if out and len(out[-1]) < 8: out[-1] += " " + p      # 너무 짧은 조각("네!")은 다음 문장과 함께: 짧으면 발음이 불안정하다
         else: out.append(p)

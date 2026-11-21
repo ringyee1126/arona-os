@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+# 사진 파일을 클립보드에 올린다 (shittim-shot 이 부른다):  shittim-clip-image <사진>
+# wl-copy 는 형식을 하나(image/png)만 내줄 수 있는데, Wine 앱(카카오톡)은 image/bmp 만 사진으로 붙여넣는다.
+# GTK 는 png·bmp·jpeg… 를 한꺼번에 내주므로 어느 앱에서든 Ctrl+V 로 사진이 붙는다.
+# 다른 것이 복사될 때까지 살아 있다가 끝난다 (Wayland 클립보드는 복사한 프로그램이 내용을 들고 있어야 한다).
+import sys, gi
+gi.require_version("Gtk", "3.0")
+from gi.repository import Gtk, Gdk, GdkPixbuf, GLib
+cb = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+cb.set_image(GdkPixbuf.Pixbuf.new_from_file(sys.argv[1]))
+# Wayland 의 GTK3 에는 "다른 것이 복사됨" 신호(owner-change)가 오지 않아서 2초마다 아직 내가 주인인지 본다
+def mine():
+    if Gdk.selection_owner_get_for_display(Gdk.Display.get_default(), Gdk.SELECTION_CLIPBOARD): return True
+    Gtk.main_quit(); return False
+GLib.timeout_add_seconds(2, mine)
+Gtk.main()

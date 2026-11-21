@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+"""아로나/프라나가 말한다.   shittim-say <arona|plana> <대사> [대사 이름]   |   --warm   |   --render <who> <대사> <out.wav>
+--wait = 지금 하는 말이 끝날 때까지 기다린다 (최대 12초; 종료·절전이 인사를 끝까지 듣고 진행하게)
+대사 이름의 녹음(assets/voice/<who>/<이름>.wav)이 있으면 그것을 바로 틀고, 없으면 합성 데몬(shittim-voiced)에 맡긴다."""
+import os, sys, json, socket, subprocess, time
+HOME = os.path.expanduser("~"); D = HOME + "/.local/share/shittim-voice"
+SOCK = os.environ["XDG_RUNTIME_DIR"] + "/shittim-voice.sock"
+
+def send(msg, start):
+    for i in range(60):
+        try:
+            s = socket.socket(socket.AF_UNIX); s.connect(SOCK); s.sendall((json.dumps(msg) + "\n").encode()); return s
+        except OSError:
+            # busy: 학습 중에는 데몬을 띄우지 않는다 - 램이 모자라 학습이 죽는다
+            if not start or not os.path.exists(D + "/venv/bin/python") or os.path.exists(D + "/busy"): return None
+            if i == 0:
+                log = open(os.environ["XDG_RUNTIME_DIR"] + "/shittim-voiced.log", "ab")
+                subprocess.Popen([D + "/venv/bin/python", HOME + "/.local/bin/shittim-voiced"], start_new_session=True,
+                                 stdin=subprocess.DEVNULL, stdout=log, stderr=log)
+            time.sleep(0.1)
+
+a = sys.argv[1:]
+if a[:1] == ["--warm"]: send({}, True)
+elif a[:1] == ["--wait"]:
+    for _ in range(120):
+        if subprocess.run(["pgrep", "-f", "pw-play --media-role Communication "], capture_output=True).returncode: break
+        time.sleep(0.1)
+elif a[:1] == ["--render"]:
+    s = send({"who": a[1], "text": a[2], "out": os.path.abspath(a[3])}, True)
+    r = s.makefile().readline().strip() if s else "error 데몬 없음"
+    if r != "ok": sys.exit(r)
+else:
+    who, text, key = a[0], a[1], (a[2] if len(a) > 2 else "")
+    wav = f"{HOME}/.config/quickshell/assets/voice/{who}/{key}.wav"
+    if key and os.path.exists(wav):
+        send({"stop": True}, False)
+        subprocess.run(["pkill", "-f", "^pw-play --media-role Communication "])
+        os.execvp("pw-play", ["pw-play", "--media-role", "Communication", wav])
+    elif os.path.exists(f"{D}/voices/{who}/gpt.ckpt"): send({"who": who, "text": text}, True)

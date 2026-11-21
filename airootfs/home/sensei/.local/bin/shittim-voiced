@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+"""아로나/프라나 목소리 합성 데몬 (GPT-SoVITS v2ProPlus, CPU). shittim-say 가 필요할 때 띄우고, 10분 동안 일이 없으면 스스로 끝난다(메모리 약 3GB).
+소켓 $XDG_RUNTIME_DIR/shittim-voice.sock 에 한 줄 JSON:
+  {"who": "arona", "text": "..."}                 문장씩 만들어 바로 읽는다. 새 요청이 오면 하던 말은 끊는다.
+  {"who": "arona", "text": "...", "out": "x.wav"} 읽지 않고 파일로 저장, 끝나면 "ok" 를 돌려준다 (정해진 대사 미리 만들기)
+  {"stop": true}  하던 말 끊기      {}  깨우기만
+목소리: ~/.local/share/shittim-voice/voices/<who>/ 의 sovits.pth, gpt.ckpt, ref.wav, ref.txt (학습: tools/voice-train.py)"""
+import os, sys, re, json, socket, threading, queue, subprocess, time, wave, pathlib
+ROOT = pathlib.Path.home() / ".local/share/shittim-voice"
+SOCK = os.environ["XDG_RUNTIME_DIR"] + "/shittim-voice.sock"
+OUT = pathlib.Path(os.environ["XDG_RUNTIME_DIR"]) / "shittim-voice"; OUT.mkdir(exist_ok=True)
+IDLE = 600
+PLAY = ["pw-play", "--media-role", "Communication"]   # shittim-say 의 pkill 이 이 앞머리를 본다
+
+# 영어를 그대로 두면 어색하게 읽는 낱말: 한글 소리로 바꿔 읽힌다 (정규식 → 읽는 법). 어색한 낱말이 또 나오면 여기에 더한다.
+READ = {r"caps\s*lock": "캡스 락", r"wi-?fi": "와이파이", r"\bgemini\b": "제미나이", r"\bapi\b": "에이피아이", r"(?<=\d)\s*mb(?![a-z])": " 메가바이트",
+        r"\bsteam\b": "스팀", r"\bpdf\b": "피디에프", r"→": ", "}
+
+def clean(text):
+    """읽을 문장들로: 코드·주소·꾸밈 기호를 빼고 문장 부호에서 자른다."""
+    t = re.sub(r"```.*?```", " ", text, flags=re.S)
+    for a, b in READ.items(): t = re.sub(a, b, t, flags=re.I)
+    t = re.sub(r"https?://\S+", " ", t)
+    t = re.sub(r"\[\[[^\]]*\]\]|[*_`#>|~^]+", " ", t)
+    t = re.sub(r"[^\w\s가-힣.,!?…~'\"%:()\-+/]", " ", t)           # 그림 문자 등
+    t = t.replace("…", "... ")
+    parts = re.split(r"(?<=[.!?。])\s+|\n+", t)
+    out = []
+    for p in (re.sub(r"\s+", " ", p).strip() for p in parts):
+        if not re.search(r"[\w가-힣]", p): continue
+        if out and len(out[-1]) < 8: out[-1] += " " + p      # 너무 짧은 조각("네!")은 다음 문장과 함께: 짧으면 발음이 불안정하다
+        else: out.append(p)
+    return out
+
+gen = 0                    # 요청 번호: 바뀌면 진행 중인 합성·재생을 버린다
+jobs = queue.Queue()       # (gen, who, text, out, conn)
+playq = queue.Queue()      # (gen, wav 경로)
+last = time.time()
+player = None
+
+def stop_playing():
+    while not playq.empty():
+        try: playq.get_nowait()
+        except queue.Empty: break
+    if player and player.poll() is None: player.terminate()
+
+def play_loop():
+    global player, last
+    while True:
+        g, path = playq.get()
+        if g == gen:
+            player = subprocess.Popen(PLAY + [path]); player.wait(); last = time.time()
+        try: os.remove(path)
+        except OSError: pass
+
+def save(path, sr, pcm):
+    with wave.open(str(path), "wb") as w: w.setnchannels(1); w.setsampwidth(2); w.setframerate(sr); w.writeframes(pcm.tobytes())
+
+def work_loop():
+    global last
+    import numpy as np, torch
+    torch.set_num_threads(max(2, (os.cpu_count() or 4) // 2))
+    os.chdir(ROOT / "GPT-SoVITS"); sys.path[:0] = [os.getcwd(), os.getcwd() + "/GPT_SoVITS"]
+    from GPT_SoVITS.TTS_infer_pack.TTS import TTS, TTS_Config
+    tts, loaded = None, None
+    while True:
+        g, who, text, out, conn = jobs.get()
+        try:
+            v = ROOT / "voices" / who
+            if g != gen and not out or not text or not (v / "gpt.ckpt").exists(): continue
+            if loaded != who:
+                if tts is None:
+                    P = "GPT_SoVITS/pretrained_models"
+                    tts = TTS(TTS_Config({"custom": dict(version="v2ProPlus", device="cpu", is_half=False, t2s_weights_path=str(v / "gpt.ckpt"),
+                        vits_weights_path=str(v / "sovits.pth"), bert_base_path=f"{P}/chinese-roberta-wwm-ext-large", cnhuhbert_base_path=f"{P}/chinese-hubert-base")}))
+                else:
+                    tts.init_t2s_weights(str(v / "gpt.ckpt")); tts.init_vits_weights(str(v / "sovits.pth"))
+                loaded = who
+            chunks, sr = [], 32000
+            for i, s in enumerate(clean(text)):
+                if g != gen and not out: break
+                # 묻는 문장("?" 또는 "…까.")은 묻는 말투의 참조 음성(ref-q)으로: 억양은 참조를 따라간다. 평서문 참조로는 물음표가 안 들렸다.
+                r = "ref-q" if re.search(r"(\?|까\.)$", s) and (v / "ref-q.wav").exists() else "ref"
+                req = dict(text=s, text_lang="ko", ref_audio_path=str(v / f"{r}.wav"), prompt_text=(v / f"{r}.txt").read_text().strip(), prompt_lang="ko",
+                           aux_ref_audio_paths=sorted(str(p) for p in v.glob("aux*.wav")),
+                           text_split_method="cut0", batch_size=1, top_k=15, top_p=1, temperature=0.9, speed_factor=1.0,
+                           fragment_interval=0.25, seed=-1, parallel_infer=True, repetition_penalty=1.35)
+                # 모델이 가끔 문장 중간에서 끝낸다("이 행동에…" 까지만). 글자 수에 비해 너무 짧으면(초당 7.5자 넘게) 다시 만들고 가장 긴 것을 쓴다.
+                n, pcm = len(re.sub(r"[^가-힣]", "", s)), None
+                for _ in range(3):
+                    for sr, x in tts.run(req):
+                        if pcm is None or len(x) > len(pcm): pcm = x
+                    if n / (len(pcm) / sr) <= 7.5: break
+                    print(f"짧게 끝남, 다시: {s!r} {len(pcm) / sr:.1f}s", flush=True)
+                if out: chunks.append(pcm)
+                elif g == gen:
+                    p = OUT / f"{g}-{i}.wav"; save(p, sr, pcm); playq.put((g, str(p)))
+            if out and chunks: save(out, sr, np.concatenate(chunks))
+            if conn: conn.sendall(b"ok\n")
+        except Exception as e:
+            import traceback; traceback.print_exc()
+            if conn:
+                try: conn.sendall(("error " + str(e)[:200] + "\n").encode())
+                except OSError: pass
+        finally:
+            last = time.time()
+            if conn: conn.close()
+
+def main():
+    global gen, last
+    try: os.unlink(SOCK)
+    except OSError: pass
+    srv = socket.socket(socket.AF_UNIX); srv.bind(SOCK); srv.listen(8); srv.settimeout(30)
+    threading.Thread(target=play_loop, daemon=True).start()
+    threading.Thread(target=work_loop, daemon=True).start()
+    while True:
+        try: conn, _ = srv.accept()
+        except socket.timeout:
+            if time.time() - last > IDLE and jobs.empty() and playq.empty() and not (player and player.poll() is None):
+                os.unlink(SOCK); return
+            continue
+        last = time.time()
+        try:
+            conn.settimeout(2); m = json.loads(conn.makefile().readline() or "{}"); conn.settimeout(None)
+        except Exception: conn.close(); continue
+        if m.get("out"): jobs.put((gen, m.get("who", "arona"), m.get("text", ""), m["out"], conn)); continue
+        conn.close()
+        if m.get("stop") or m.get("text"): gen += 1; stop_playing()
+        if m.get("text"): jobs.put((gen, m.get("who", "arona"), m["text"], None, None))
+
+if __name__ == "__main__":
+    if sys.argv[1:2] == ["--clean"]: print(clean(sys.argv[2])); sys.exit()   # 자기 점검: 문장 나누기
+    main()

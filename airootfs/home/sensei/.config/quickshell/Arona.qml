@@ -1,6 +1,7 @@
 pragma Singleton
 import Quickshell
 import Quickshell.Io
+import Quickshell.Services.Pipewire
 import QtQuick
 
 // Arona's voice in the shell.
@@ -10,7 +11,7 @@ import QtQuick
 Singleton {
     id: arona
     signal say(string text)
-    onSay: text => speak(text)
+    onSay: text => { for (const k in lines) if (lines[k] === text) return speak(text) }   // 말풍선 글 중 표에 있는 대사만 소리로 (알림 제목 등은 글만). 대화 답변은 attempt()가 직접 speak 한다
 
     // 목소리: 정해진 대사(lines)만, 미리 녹음한 assets/voice/<arona|plana>/<이름>.wav 를 튼다.
     // 파일이 없는 대사는 조용히 넘어간다. Gemini 답변처럼 그때그때 다른 말은 소리가 없다.
@@ -116,7 +117,7 @@ Singleton {
         "idle-2": "바탕화면만 보고 계시네요…\n혹시 아로나를 보고 계신 건가요?",
         "idle-3": "오늘은 무슨 일을 하실 거예요, 선생님?",
         "idle-4": "심심하면 아로나한테 말 걸어 주세요!",
-        "idle-5": "하암… 아, 아니에요!\n졸지 않았어요!",
+        "idle-5": "아, 아니에요!\n졸고 있던 거 아니에요, 선생님!",
         "work-1": "업무를 시작할게요, 선생님!\n키보토스가 기다리고 있어요!",
         "work-2": "샬레로 출근이에요!\n오늘도 학생들을 잘 부탁드려요.",
         "work-3": "블루 아카이브를 실행할게요.\n잠시만 기다려 주세요!",
@@ -152,13 +153,28 @@ Singleton {
         return ks.length ? lines[ks[Math.floor(Math.random() * ks.length)]] : ""
     }
     function v(a, p) { return who === "plana" ? p : a }       // 표에 없는 문장: 아로나 말투 / 프라나 말투
-    function react(ev) { const t = pick(ev); if (t) say(t) }   // 말풍선 + 목소리
-    function speak(text) {
-        if (!cfg.voice) return
-        for (const k in lines) if (lines[k] === text)
-            return Quickshell.execDetached(["sh", "-c", "pkill -f '^pw-play --media-role Communication '; exec pw-play --media-role Communication \"$1\"",
-                "sh", Qt.resolvedUrl("assets/voice/").toString().replace("file://", "") + who + "/" + k + ".wav"])
+    function react(ev) {      // 말풍선 + 목소리
+        const t = pick(ev); if (t) say(t)
+        if (ev === "chat" || ev === "search") warm()
     }
+    // 대화를 열거나 물으면 합성 데몬을 미리 띄운다: 처음 켜는 데 10초쯤 걸려서, 답이 올 때는 준비돼 있게
+    function warm() { if (cfg.voice) Quickshell.execDetached([Quickshell.env("HOME") + "/.local/bin/shittim-say", "--warm"]) }
+    // 목소리 (~/.local/bin/shittim-say): 표에 있는 대사는 미리 만들어 둔 assets/voice/<캐릭터>/<이름>.wav 를 바로 틀고,
+    // Gemini 답변처럼 그때그때 다른 말은 학습한 목소리(GPT-SoVITS, shittim-voiced)로 만들어 읽는다. 새로 말하면 하던 말은 끊는다.
+    function speak(text) {
+        if (!cfg.voice || !text) return
+        let k = ""
+        for (const x in lines) if (lines[x] === text) { k = x; break }
+        Quickshell.execDetached([Quickshell.env("HOME") + "/.local/bin/shittim-say", who, text, k])
+    }
+    // 음량을 바꾸면(키, 상단 바, ≡ 메뉴 어디서든) 멈춘 뒤 0.2초에 "띠링"(assets/sfx/volume.wav)으로 지금 크기를 들려준다.
+    PwObjectTracker { objects: [Pipewire.defaultAudioSink] }
+    readonly property var sink: Pipewire.defaultAudioSink
+    readonly property real vol: sink && sink.audio ? sink.audio.volume : -1
+    property var volSink: null      // 출력 장치가 바뀌어서 달라진 값은 세지 않는다
+    onVolChanged: { if (vol >= 0 && volSink === sink && volArm.armed) volTick.restart(); volSink = sink }
+    Timer { id: volArm; property bool armed: false; interval: 5000; running: true; onTriggered: armed = true }   // 켜질 때 값이 자리 잡는 동안은 조용히
+    Timer { id: volTick; interval: 200; onTriggered: Sfx.play("volume") }
 
     function greeting() {
         const h = Theme.hour
@@ -274,7 +290,7 @@ Singleton {
         if (replying || !String(text).trim()) return
         replyText = ""; replyError = ""
         if (!ready) return fail(lines["err-nokey"])
-        replying = true; replyMood = "thinking"; speak(pick("thinking"))
+        replying = true; replyMood = "thinking"; speak(pick("thinking")); warm()
         const model = cfg.model.trim() || "gemini-flash-latest"
         job = { turns: history.concat([{ role: "user", text: String(text), parts: parts || null }]),
                 models: model === fallbackModel ? [model, model] : [model, fallbackModel, model], i: 0 }
@@ -312,6 +328,7 @@ Singleton {
             const tag = raw.match(/\[\[표정:([^\]]*)\]\]/)
             arona.replyMood = arona.moodOf(tag ? tag[1] : "")
             arona.replyText = body
+            arona.speak(body)
             arona.history = turns.concat([{ role: "model", text: raw }]).slice(-20)
         }
         x.send(JSON.stringify({

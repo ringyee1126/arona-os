@@ -1,0 +1,18 @@
+#!/usr/bin/env python3
+"""숨긴 창(− 버튼 = special:min 작업 공간으로 보냄)을 다시 꺼낸다.
+shittim-unmin --addr 0x…            그 창으로 간다 (숨겨져 있으면 꺼내서). Alt+Tab 목록이 쓴다.
+shittim-unmin <class 일부> [제목 일부]   맞는 숨긴 창을 모두 꺼낸다. 하나도 없으면 종료 코드 1 (독: 그러면 새로 실행)."""
+import json, subprocess, sys
+def hc(*a): return subprocess.run(["hyprctl", *a], capture_output=True, text=True).stdout
+def show(c, ws):
+    sel = f"window = 'address:{c['address']}'"
+    if c["workspace"]["name"] == "special:min": hc("dispatch", f"hl.dsp.window.move({{ workspace = '{ws}', follow = false, {sel} }})")
+    hc("dispatch", f"hl.dsp.focus({{ {sel} }})"); hc("dispatch", f"hl.dsp.window.bring_to_top({{ {sel} }})")
+clients, ws = json.loads(hc("clients", "-j")), json.loads(hc("activeworkspace", "-j"))["id"]
+a = sys.argv[1:]
+if a[:1] == ["--addr"]: hit = [c for c in clients if c["address"] == a[1]]
+else:
+    cls, title = a[0].lower(), (a[1] if len(a) > 1 else "")
+    hit = [c for c in clients if c["workspace"]["name"] == "special:min" and cls in c["class"].lower() and title in c["title"]]
+for c in hit: show(c, ws)
+sys.exit(0 if hit else 1)

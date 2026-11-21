@@ -33,9 +33,9 @@ PanelWindow {
         if (!open) return
         open = false
         const w = wins[idx]
-        if (w && idx !== 0) Quickshell.execDetached(["sh", "-c",
-            // 목록 창이 사라질 때 Hyprland가 마우스 밑의 창으로 포커스를 되돌리므로, 그 뒤에 옮긴다
-            "sleep 0.12; hyprctl dispatch \"hl.dsp.focus({ window = 'address:$1' })\"; hyprctl dispatch 'hl.dsp.window.bring_to_top()'", "sh", w.address])
+        if (w && (idx !== 0 || w.workspace.name === "special:min")) Quickshell.execDetached(["sh", "-c",
+            // 목록 창이 사라질 때 Hyprland가 마우스 밑의 창으로 포커스를 되돌리므로, 그 뒤에 옮긴다. 숨긴(−) 창이면 꺼내 온다
+            "sleep 0.12; exec shittim-unmin --addr \"$1\"", "sh", w.address])
     }
     function thumb(address) {      // 같은 창의 Wayland 핸들 (미리보기용). 못 찾으면 글자만 보인다
         const a = String(address).replace(/^0x/, "")
@@ -53,7 +53,7 @@ PanelWindow {
                            .sort((a, b) => a.focusHistoryID - b.focusHistoryID)
                 const n = sw.wins.length, d = sw.steps
                 sw.steps = 0
-                if (n < 2) { sw.wantCommit = false; return }
+                if (n < 2 && !(n === 1 && sw.wins[0].workspace.name === "special:min")) { sw.wantCommit = false; return }   // 숨긴 창 하나뿐이어도 꺼낼 수 있게
                 sw.idx = ((d % n) + n) % n
                 sw.open = true
                 if (sw.wantCommit) { sw.wantCommit = false; sw.commit() }
@@ -102,7 +102,7 @@ PanelWindow {
                     }
                     Text {
                         x: 12 * sw.s; width: parent.width - 24 * sw.s; y: 144 * sw.s
-                        text: tile.modelData.title; elide: Text.ElideRight; horizontalAlignment: Text.AlignHCenter
+                        text: (tile.modelData.workspace.name === "special:min" ? "(숨김) " : "") + tile.modelData.title; elide: Text.ElideRight; horizontalAlignment: Text.AlignHCenter
                         color: "white"; font.family: Theme.font; font.pixelSize: 17 * sw.s; font.weight: tile.sel ? Font.ExtraBold : Font.Medium
                     }
                 }

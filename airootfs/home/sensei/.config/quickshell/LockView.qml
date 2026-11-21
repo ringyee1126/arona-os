@@ -15,8 +15,8 @@ Item {
 
     focus: true
     Keys.onPressed: e => { if (!v.login) { v.openLogin(); e.accepted = true } }
-    function openLogin() { login = true; field.forceActiveFocus() }
-    function closeLogin() { login = false; powerOpen = false; field.text = ""; v.forceActiveFocus() }
+    function openLogin() { login = true; shown = 0; ctl.talking = true; Arona.speak(ctl.line); field.forceActiveFocus() }   // 대화창이 뜰 때 말하기 시작
+    function closeLogin() { login = false; ctl.talking = false; powerOpen = false; field.text = ""; v.forceActiveFocus() }
 
     Connections {
         target: v.ctl
@@ -101,7 +101,7 @@ Item {
         y: 46 * v.s; spacing: 14 * v.s
         Pill { s: v.s; icon: "wifi"; text: "Wi-Fi" }
         Pill { s: v.s; icon: "volume"; text: v.sink && v.sink.audio ? Math.round(v.sink.audio.volume * 100) : "–" }
-        Pill { s: v.s; icon: "battery"; text: v.bat && v.bat.isLaptopBattery ? Math.round(v.bat.percentage <= 1 ? v.bat.percentage * 100 : v.bat.percentage) + "%" : "AC" }
+        Pill { s: v.s; icon: UPower.onBattery ? "battery" : "battery-charging"; pulse: !UPower.onBattery; text: v.bat && v.bat.isLaptopBattery ? Math.round(v.bat.percentage <= 1 ? v.bat.percentage * 100 : v.bat.percentage) + "%" : "AC" }
     }
 
     // ---------- big clock ----------

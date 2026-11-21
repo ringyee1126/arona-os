@@ -17,6 +17,7 @@ SOUNDS = {
     "close":   tone(990, 990, 70, 4) + tone(660, 660, 110, 5),
     "send":    tone(520, 1250, 110, 3.5),
     "receive": tone(880, 880, 90, 3) + tone(1320, 1320, 260, 5),
+    "volume":  tone(1175, 1175, 70, 4, 0.3) + tone(1568, 1568, 260, 5, 0.3),   # 음량 조절 "띠링"
     "error":   tone(330, 300, 120, 3) + tone(247, 220, 200, 4),
 }
 assert all(max(map(abs, s)) < 1 for s in SOUNDS.values())

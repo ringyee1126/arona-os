@@ -7,6 +7,7 @@ Item {
     property string icon: ""
     property string text: ""
     property bool dark: false
+    property bool pulse: false   // 아이콘이 천천히 깜빡인다 (충전 중)
     implicitWidth: row.implicitWidth + 40 * s
     implicitHeight: 46 * s
 
@@ -21,6 +22,11 @@ Item {
             width: 22 * p.s; height: width
             source: p.icon ? Theme.assets + "icons/" + p.icon + ".svg" : ""
             sourceSize.width: width * 2; sourceSize.height: height * 2
+            SequentialAnimation on opacity {
+                running: p.pulse; loops: Animation.Infinite; alwaysRunToEnd: true
+                NumberAnimation { to: 0.45; duration: 900; easing.type: Easing.InOutSine }
+                NumberAnimation { to: 1; duration: 900; easing.type: Easing.InOutSine }
+            }
         }
         Text {
             anchors.verticalCenter: parent.verticalCenter

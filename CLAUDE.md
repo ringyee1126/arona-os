@@ -217,3 +217,54 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
   (카톡은 XIM 포커스가 없을 때도) `XSetInputFocus` 로 되살리고 `~/.cache/shittim-ime.log` 에 한 줄 남긴다.
   시험: 카톡을 활성으로 두고 `shittim-ime-heal --test-break`(포커스 없앰) → `shittim-ime-heal` → DebugInfo 에 `focus:1`.
   **다음에 또 생기면 그 로그를 볼 것**: 줄이 있으면 추정이 맞은 것(직전에 무엇을 했는지 물어 원인 찾기), 줄이 없는데 안 쳐지면 다른 원인.
+- 2026-11-21 01:30 재확인 (사용자가 "여전히 안 됨"이라 한 직후): 카톡을 활성화하면 X 포커스·XIM `focus:1` 정상이고, XTest 로 넣은
+  `gks␣` 가 카톡 입력칸과 같은 프리픽스의 메모장에서 "한 "으로 쳐졌다. 즉 Wine·XIM·fcitx5 는 멀쩡하다. 남은 차이 = 실제 키보드 경로
+  (Hyprland → XWayland, 한/영 단축키). `shittim-ime-heal` 이 이제 XWayland 창에서 한/영을 누를 때마다 상태 한 줄을 로그에 남긴다
+  (`정상`/`고침`, 입력기 1=영어 2=한글, focus:1 인 입력 칸). 줄이 아예 안 생기면 한/영 단축키가 안 불린 것.
+- **원인 확정 (2026-11-21 01:40)**: 포커스가 kitty(Wayland text-input 창)를 아주 짧게 스쳐 카톡(X 창)으로 가면 kitty 의 늦은
+  `enable` 을 Hyprland 0.57.2 가 포커스 확인 없이 받아 Wayland 입력기를 켠 채로 둔다. DebugInfo 에
+  `program:kakaotalk.exe frontend:wayland_v2 focus:1` 이 XIM 과 같이 뜨고, fcitx5 가 자판을 잡아 한글 조합이 그쪽으로 새서
+  한글만 사라진다(영어는 됨). 재현: `hyprctl --batch "dispatch hl.dsp.focus({window=\"address:<kitty>\"}) ; dispatch hl.dsp.focus({window=\"address:<카톡>\"})"`.
+  X 창을 거쳐서는 안 풀리고 kitty 를 천천히(0.15초+) 거쳐 돌아오면 풀린다. `shittim-ime-heal` 이 한/영 키에서 이 상태를 보면
+  같은 작업 공간의 Wayland 창을 한 번씩 거쳐 돌아오고 한글 상태로 둔다 (로그 `고침-wayland`). uinput 가상 자판으로 확인함.
+  자동 복구도 넣음 (사용자 요청, 01:45): hyprland.lua 의 `window.active` 가 0.3초 뒤 `shittim-ime-heal --auto` 를 부른다
+  (로그 `고침-wayland-자동`, 한/영 상태는 안 건드림). 고칠 때 창을 거치는 0.4초 동안 치는 글자는 kitty 로 갈 수 있다.
+
+## 목소리 학습·대화 읽기, 숨기기 버튼, 섞어 재생 (2026-11-22)
+위 "목소리: 음성 서버는 쓰지 않는다 … 사용자가 데스크탑에서 음성을 만들어 넣을 예정" 은 **옛 결정이다.** 지금은 이 노트북에서 학습한 목소리를 쓴다.
+- 구성: `~/.local/share/shittim-voice/` = `GPT-SoVITS/`(git clone, v2ProPlus) + `venv/`(uv, Python 3.11, CPU torch; uv 는 `~/.cache/shittim-voice/boot/bin/uv`)
+  + `voices/<arona|plana>/{gpt.ckpt, sovits.pth, ref.wav, ref.txt}` + `data/`(학습 음성·목록). 15GB, ISO 에는 넣지 않는다.
+- 학습 자료: 설치된 블루 아카이브의 한국어 음성 묶음 `…/BlueArchive_Data/StreamingAssets/PUB/Resource/GameData/MediaResources/Audio/VOC_KR/`
+  `KR_Arona.molru`(148개 8분 30초) · `KR_NP0035.molru`(= 프라나, 62개 3분 15초). `.molru` 는 Ogg 를 이어 붙인 것 → `tools/molru-extract.py`.
+  받아쓰기 `tools/asr.py`(faster-whisper large-v3) → `tools/mklist.py` → `data/<이름>.list`. 아로나 목록은 손으로 27곳 고치고 16개를 뺐다(`data/arona.list.keep`).
+- 학습: `venv/bin/python tools/voice-train.py <이름> 8 15` (CPU 로 프라나 1시간, 아로나 1시간 40분). **램 7GB 를 쓴다**: 배치 4 나 다른 무거운 일(합성 데몬·whisper)과
+  겹치면 OOM 으로 죽는다. 그래서 학습 중에는 `busy` 파일을 두고 `shittim-say` 가 데몬을 안 띄운다.
+- 말하기: `Arona.speak()` → `~/.local/bin/shittim-say <who> <대사> [이름]` → `assets/voice/<who>/<이름>.wav` 가 있으면 그것, 없으면 데몬 `shittim-voiced`
+  (소켓 `$XDG_RUNTIME_DIR/shittim-voice.sock`, 로그 `$XDG_RUNTIME_DIR/shittim-voiced.log`, 램 4GB, 10분 쉬면 끝남)이 문장씩 합성해 읽는다.
+  데몬 첫 소리까지: 처음 켤 때 14초, 켜져 있으면 3~4초. 대화창을 열거나 물으면 미리 띄운다(`Arona.warm()`). 말풍선 글 중 소리로 나오는 것은 표의 대사와 Gemini 답변뿐.
+- 문장이 중간에 끊기는 일이 있다(모델이 일찍 끝냄). 정해진 대사는 `tools/voice-build.sh` 가 만든 뒤 받아써서 대본과 다르면 다시 만든다(`voice-check.py`).
+  즉석 합성은 글자 수에 비해 너무 짧으면(초당 7.5자 넘게) 3번까지 다시 만든다. 영어를 어색하게 읽으면 `shittim-voiced` 의 `READ` 표에 읽는 법을 더한다(Caps Lock → 캡스 락).
+- 음성 wav(31MB)는 저장소에 넣지 않았다(게임 음성으로 학습한 목소리라 ISO 로 나눠 주지 않는다). 새로 설치하면 위 순서로 다시 만든다.
+- 음량: 바꾸면 0.2초 뒤 `assets/sfx/volume.wav`("띠링"). `Arona.qml` 이 기본 출력 장치의 음량을 본다(키·상단 바·≡ 메뉴 공통).
+- 잠금화면: 키를 눌러 대화창이 뜰 때부터 말한다(`Lock.talking`). 종료·다시 시작·절전은 인사 목소리가 끝나면 바로 진행(`shittim-say --wait`), 업무 시작은 0.4초 뒤.
+- 숨기기(−): hyprbars 버튼 → 창을 `special:min` 작업 공간으로. 꺼내기 = Alt+Tab 목록("(숨김)" 표시) 또는 독의 그 앱 버튼 → `~/.local/bin/shittim-unmin`
+  (독 표의 `cls`/`title` = 창 class·제목이 명령 이름과 다른 앱). 설정 창의 − 는 예전대로 닫기.
+- 음악: 섞기 버튼 = mpv `playlist-shuffle` / `playlist-unshuffle` (`Music.shuffle`).
+- 전체 화면 게임 위의 창이 안 눌림(재발): 가상 마우스로는 재현되지 않았다. **원인 미확정.** 추정 = 실제 터치패드에서 뗌 단축키가 안 불려 게임이 위에 남음.
+  `sink` 를 누를 때·창이 열릴 때에도, 그리고 0.12초·1초 뒤에 한 번 더 하도록 보강했다. 또 생기면 직전에 한 동작을 물어볼 것.
+- 시험용: `quickshell ipc call arona ask "…"` = 대화창을 안 열고 묻기. 주의: `pkill -f <낱말>` 은 그 낱말이 든 자기 셸도 죽인다 → `[s]hittim-voiced` 처럼 쓴다.
+- 물음표 억양: 묻는 문장("?" 또는 "…까.")은 묻는 말투의 참조 음성 `voices/<who>/ref-q.wav`(+`.txt`)로 합성한다. 평서문 참조로는 끝이 안 올라갔다.
+  바꾸기 전 파일은 `assets/voice/<who>/*.old` 로 남겨 뒀다(사용자가 새 억양을 확인하면 지워도 된다).
+- 새 컴퓨터에서 목소리 만들기: `bash tools/voice-setup.sh` (환경 설치 → 음성 꺼내기 → 받아쓰기 → 학습 → 대사 만들기; **통째로 돌려 본 적은 없음**).
+
+## 문서·압축·창 크기 점검, 화면 물어보기 (2026-11-22)
+- docx·xlsx·pptx·hwp 더블클릭이 Wine 으로 가던 것: `shittim-wine-open --register` 가 만든 "shittimfile" 연결을 Wine(winemenubuilder)이
+  리눅스 기본 앱(`~/.local/share/applications/wine-extension-*.desktop`)으로 내보냈다 → Wine → shittim-wine-open → gio open → 다시 Wine.
+  고침: 레지스트리 `HKCU\Software\Wine\FileOpenAssociations Enable=N`(--register 에 넣음, 기존 프리픽스에 적용함), 내보낸 파일 59개 삭제,
+  `mimeapps.list` 에 문서 형식 → LibreOffice. **wine-extension-*.desktop 이 다시 생기면 이 설정이 풀린 것.**
+- hwp/hwpx: LibreOffice 확장 H2Orestart 가 필요하고 Java 가 있어야 한다. `sudo pacman -S --needed jre-openjdk-headless` 뒤 `bash tools/setup-hwp.sh`. **사용자가 실행해야 적용, 미확인.**
+- 압축: 더블클릭 = `~/.local/bin/shittim-extract`. zip 은 직접 푼다 - Windows(한국어)에서 만든 zip 은 이름이 CP949 라 file-roller·bsdtar 로는 한글이 깨졌다
+  (시험: `zipfile.ZipInfo._encodeFilenameFlags` 를 바꿔 CP949 이름·UTF-8 표시 없는 zip 을 만든다). 암호 zip·7z·rar·tar 는 file-roller.
+- 쓸 수 있는 자리(상단 바~독)보다 크게 뜨는 창(VS Code 1920x1080, LibreOffice)은 `keep_top` 이 최대화 자리로 맞춘다(뜬 뒤 0.4초·1.5초에도 확인). `steam_app_*` 는 제외.
+- LibreOffice "오늘의 팁" 창 끔: `~/.config/libreoffice/4/user/registrymodifications.xcu` 의 `ShowTipOfTheDay=false` (이 노트북만; 새 설치는 첫 실행 때 체크를 끄면 된다).
+- 화면 물어보기: Super+Shift+A → `~/.local/bin/shittim-see`(slurp+grim) → `quickshell ipc call arona see <png>` → 대화창이 열리고 Gemini 가 그 화면 조각을 설명한다.

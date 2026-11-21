@@ -263,6 +263,52 @@ FloatingWindow {
                     }
                 }
             }
+            // 맨 아래: 지금 상태 (CPU · 램 · 저장 공간). 창이 보이는 동안 2초마다 다시 읽는다.
+            Column {
+                id: stat
+                property var v: ({})       // cpu/mem/disk -> { p: 0..1, t: 글자 }
+                property var prev: null    // 직전 /proc/stat 의 (전체, 쉬는) 시간: CPU 사용률은 그 차이로 구한다
+                anchors { bottom: parent.bottom; bottomMargin: 20 * win.s }
+                x: 24 * win.s; width: parent.width - 48 * win.s; spacing: 11 * win.s
+                Process {
+                    id: statProc
+                    command: ["sh", "-c", "head -n1 /proc/stat; awk '/^MemTotal/{t=$2} /^MemAvailable/{a=$2} END{print t-a, t}' /proc/meminfo; df -B1 --output=used,size / | tail -n1"]
+                    stdout: StdioCollector {
+                        onStreamFinished: {
+                            const l = text.trim().split("\n").map(x => x.trim().split(/\s+/))
+                            if (l.length < 3) return
+                            const c = l[0].slice(1, 9).map(Number), total = c.reduce((a, b) => a + b, 0), idle = c[3] + c[4]
+                            const o = {}, p = stat.prev, gb = 1073741824
+                            if (p && total > p.total) { const u = 1 - (idle - p.idle) / (total - p.total); o.cpu = { p: u, t: Math.round(u * 100) + "%" } }
+                            stat.prev = { total: total, idle: idle }
+                            const mu = l[1][0] / 1048576, mt = l[1][1] / 1048576, du = l[2][0] / gb, dt = l[2][1] / gb
+                            o.mem = { p: mu / mt, t: mu.toFixed(1) + " / " + mt.toFixed(1) + " GB" }
+                            o.disk = { p: du / dt, t: Math.round(du) + " / " + Math.round(dt) + " GB" }
+                            stat.v = o
+                        }
+                    }
+                }
+                Timer { interval: 2000; running: win.visible; repeat: true; triggeredOnStart: true; onTriggered: statProc.running = true }
+                Rectangle { width: parent.width; height: 1; color: "#CBE4F3" }
+                Repeater {
+                    model: [["CPU", "cpu"], ["램", "mem"], ["저장 공간", "disk"]]
+                    delegate: Column {
+                        id: st
+                        required property var modelData
+                        readonly property var d: stat.v[modelData[1]]
+                        width: parent.width; spacing: 5 * win.s
+                        Item {
+                            width: parent.width; height: 18 * win.s
+                            Sub { text: st.modelData[0]; font.pixelSize: 13 * win.s; font.weight: Font.Bold }
+                            Sub { anchors.right: parent.right; text: st.d ? st.d.t : "…"; font.pixelSize: 13 * win.s }
+                        }
+                        Rectangle {
+                            width: parent.width; height: 6 * win.s; radius: height / 2; color: "#CFE0EC"
+                            Rectangle { width: parent.width * (st.d ? st.d.p : 0); height: parent.height; radius: height / 2; color: st.d && st.d.p > 0.9 ? "#FF6B81" : Theme.sky }
+                        }
+                    }
+                }
+            }
         }
 
         Flickable {
@@ -619,7 +665,7 @@ FloatingWindow {
                     T { anchors.verticalCenter: parent.verticalCenter; text: Arona.name + " 목소리"; font.pixelSize: 18 * win.s; font.weight: Font.Bold }
                     Toggle { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; on: Arona.settings.voice; onToggled: Arona.settings.voice = !Arona.settings.voice }
                 }
-                Sub { text: "인사, 쓰다듬기처럼 정해진 대사를 녹음된 목소리로 들려줘요." }
+                Sub { text: "인사와 대화 답변을 학습한 목소리로 읽어 주고, 음량을 바꾸면 목소리로 크기를 알려줘요." }
             }
             Item {
                 width: parent.width; height: mixBtn.height

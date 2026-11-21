@@ -38,6 +38,7 @@ def xim_focused():   # fcitx5 가 보기에 XIM 입력 칸 하나가 포커스�
                           "org.fcitx.Fcitx.Controller1.DebugInfo"], capture_output=True, text=True).stdout
     return any("frontend:xim" in l and "focus:1" in l for l in out.splitlines())
 
+AUTO = "--auto" in sys.argv   # hyprland.lua 의 window.active 가 부른다 (한/영 키 없이)
 if "--test-break" in sys.argv:
     X.XSetInputFocus(d, 0, 0, 0); X.XSync(d, 0); sys.exit(0)
 
@@ -46,10 +47,32 @@ if not win.get("xwayland"): sys.exit(0)
 fx, ax = xfocus(), active_xwin()
 # 고장 = X 포커스가 아예 없다(None 0 / PointerRoot 1). 카카오톡은 포커스가 있어도 입력기가 안 붙은 경우까지 본다.
 broken = fx <= 1 or (win.get("class") == "kakaotalk.exe" and not xim_focused())
-if not broken or not ax: sys.exit(0)
+# 고장 2 = X 창이 활성인데 Wayland 입력기(wayland_v2)도 켜져 있다: 한글 조합이 그쪽으로 새서 한글만 사라진다.
+# 포커스가 Wayland 창(kitty)을 아주 짧게 스쳐 X 창으로 오면 Hyprland 가 입력기를 켠 채로 둔다 (kitty 의 늦은 enable).
+stale = any("frontend:wayland" in l and "focus:1" in l for l in subprocess.run(["dbus-send", "--print-reply",
+        "--dest=org.fcitx.Fcitx5", "/controller", "org.fcitx.Fcitx.Controller1.DebugInfo"], capture_output=True, text=True).stdout.splitlines())
+# 원인 추적용: 한/영을 누를 때마다 그 순간의 상태를 남긴다 (focus:1 인 입력 칸, 입력기 상태 1=영어 2=한글)
+def log(what):
+    ics = [l.split()[2] + "/" + l.split()[3] for l in subprocess.run(["dbus-send", "--print-reply", "--dest=org.fcitx.Fcitx5",
+           "/controller", "org.fcitx.Fcitx.Controller1.DebugInfo"], capture_output=True, text=True).stdout.splitlines() if "focus:1" in l]
+    st = subprocess.run(["fcitx5-remote"], capture_output=True, text=True).stdout.strip()
+    os.makedirs(os.path.expanduser("~/.cache"), exist_ok=True)
+    with open(os.path.expanduser("~/.cache/shittim-ime.log"), "a") as f:
+        f.write("%s %s class=%s title=%s xfocus=%#x active=%#x 입력기=%s focus=%s\n" % (time.strftime("%F %T"), what, win.get("class"), win.get("title"), fx, ax, st, ics))
+if stale:
+    # 입력기를 켠 Wayland 창을 천천히 한 번 거쳐 돌아오면 꺼진다 (X 창을 거치는 것으로는 안 꺼짐).
+    # shortcut: 같은 작업 공간의 Wayland 창만 거친다, 다른 작업 공간 창이 원인이면 그 창을 한 번 눌렀다 오면 된다
+    focus = lambda addr: subprocess.run(["hyprctl", "dispatch", 'hl.dsp.focus({window="address:%s"})' % addr], capture_output=True)
+    for c in json.loads(subprocess.run(["hyprctl", "clients", "-j"], capture_output=True, text=True).stdout or "[]"):
+        if not c["xwayland"] and c["mapped"] and c["workspace"]["id"] == win["workspace"]["id"]:
+            focus(c["address"]); time.sleep(0.2)
+    focus(win["address"]); time.sleep(0.2)
+    if AUTO: log("고침-wayland-자동"); sys.exit(0)
+    subprocess.run(["fcitx5-remote", "-o"])   # 한글이 안 쳐져서 누른 것이므로 한글 상태로 둔다
+    log("고침-wayland"); sys.exit(0)
+if AUTO: sys.exit(0)   # 자동(창이 활성이 될 때)은 위의 고장 2만 고친다, 로그도 고쳤을 때만
+if not broken or not ax: log("정상"); sys.exit(0)
 X.XSetInputFocus(d, 0, 0, 0)      # 같은 창에 다시 주면 FocusIn 이 안 가므로 한 번 뗐다가 준다
 X.XSetInputFocus(d, ax, 2, 0)     # 2 = RevertToParent
 X.XSync(d, 0)
-os.makedirs(os.path.expanduser("~/.cache"), exist_ok=True)
-with open(os.path.expanduser("~/.cache/shittim-ime.log"), "a") as f:
-    f.write("%s 고침 class=%s title=%s xfocus=%#x active=%#x\n" % (time.strftime("%F %T"), win.get("class"), win.get("title"), fx, ax))
+log("고침")

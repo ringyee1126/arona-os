@@ -92,6 +92,9 @@ if hl.plugin.hyprbars then
     hl.plugin.hyprbars.add_button({ bg_color = "rgb(ff6b81)", fg_color = "rgb(ffffff)", size = 25, icon = "✕",
                                     action = "hyprctl dispatch 'hl.dsp.window.close()'" })
     hl.plugin.hyprbars.add_button({ bg_color = "rgb(2fa8e1)", fg_color = "rgb(ffffff)", size = 25, icon = "□", action = maximize })
+    -- − = 숨기기: 안 보이는 작업 공간 special:min 으로 보낸다. 다시 꺼내기 = Alt+Tab 에서 고르거나 독의 그 앱 버튼 (shittim-unmin)
+    hl.plugin.hyprbars.add_button({ bg_color = "rgb(3d5a74)", fg_color = "rgb(ffffff)", size = 25, icon = "−",
+                                    action = "hyprctl dispatch 'hl.dsp.window.move({ workspace = \"special:min\", follow = false })'" })
     -- apps that draw their own buttons (Chromium's tab strip, VS Code, GTK4 apps, KakaoTalk) and dialogs keep
     -- only theirs. Chromium app windows (chrome-*, e.g. the Claude app) draw none, so they do get the bar.
     hl.window_rule({ name = "hyprbars-own-buttons", ["hyprbars:no_bar"] = true,
@@ -106,6 +109,7 @@ hl.bind(mod .. " + Space", hl.dsp.exec_cmd("quickshell ipc call launcher toggle"
 hl.bind(mod .. " + L", hl.dsp.exec_cmd("quickshell ipc call lock lock"))
 hl.bind(mod .. " + I", hl.dsp.exec_cmd("quickshell ipc call settings toggle"))
 hl.bind(mod .. " + A", hl.dsp.exec_cmd("quickshell ipc call chat toggle"))
+hl.bind(mod .. " + SHIFT + A", hl.dsp.exec_cmd("shittim-see"))   -- 화면 물어보기: 고른 화면 조각을 아로나에게 보여 준다
 -- 스크린샷·화면 녹화 (~/.local/bin/shittim-shot): 사진은 ~/사진/스크린샷 + 클립보드, 녹화는 ~/비디오/화면 녹화
 hl.bind("Print", hl.dsp.exec_cmd("shittim-shot menu"))   -- 사진/녹화 고르기, 녹화 중이면 녹화 끝
 hl.bind(mod .. " + SHIFT + S", hl.dsp.exec_cmd("shittim-shot region"))
@@ -180,12 +184,29 @@ function shittim_snap(zone, w)   -- 전역: hyprctl로 시험할 수 있게.  w 
 end
 -- 전체 화면 창(게임)도 같은 문제다: 누르면 클릭 순서로는 맨 위로 올라오는데 화면에는 그 위에 뜬 창(설정 등)이 계속 보여서,
 -- 보이는 창을 눌러도 게임이 받는다. 전체 화면 창은 활성이 되거나 눌릴 때마다 맨 밑으로 내려 보이는 순서와 맞춘다.
-local function sink(w)
-    if w and (w.fullscreen or 0) ~= 0 then hl.dispatch(hl.dsp.window.alter_zorder({ mode = "bottom", window = "address:" .. w.address })) end
+local function sink_now()
+    for _, w in ipairs(hl.get_windows()) do
+        if (w.fullscreen or 0) ~= 0 then hl.dispatch(hl.dsp.window.alter_zorder({ mode = "bottom", window = "address:" .. w.address })) end
+    end
+end
+-- 지금 한 번, 조금 뒤에 두 번 더: 누르는 순간 올라온 것(0.12초)과 한글 복구가 포커스를 돌린 뒤(1초)까지 잡는다.
+-- 뗌 단축키만으로는 모자랐다: 실제 터치패드·마우스에서는 뗌 단축키가 안 불릴 때가 있어, 게임을 연달아 누르면 게임이 위에 남았다.
+local sink_t = {}
+local function sink()
+    sink_now()
+    for i, ms in ipairs({ 120, 1000 }) do
+        if sink_t[i] then sink_t[i]:set_enabled(false) end
+        local t; t = hl.timer(function() t:set_enabled(false); pcall(sink_now) end, { timeout = ms, type = "repeat" }); sink_t[i] = t
+    end
 end
 hl.on("window.active", sink)
-for _, b in ipairs({ "mouse:272", "mouse:273" }) do   -- 이미 활성인 창을 또 눌러도 올라온다: 뗄 때 다시 내린다
-    hl.bind(b, function() sink(hl.get_active_window()) end, { release = true, non_consuming = true, ignore_mods = true })
+hl.on("window.open", sink)
+-- 카톡 한글 자동 복구: 포커스가 kitty 를 스쳐 X 창으로 오면 Wayland 입력기가 켜진 채 남아 한글만 사라진다 (CLAUDE.md).
+-- 창이 활성이 되고 0.3초 뒤(kitty 의 늦은 enable 이 도착한 뒤)에 보고 고친다. flock: 복구 중의 포커스 이동이 또 부르므로 겹치지 않게.
+hl.on("window.active", function() hl.dispatch(hl.dsp.exec_cmd("sleep 0.3; flock -n /tmp/shittim-ime-heal.lock shittim-ime-heal --auto")) end)
+for _, b in ipairs({ "mouse:272", "mouse:273" }) do   -- 이미 활성인 창을 또 눌러도 올라온다: 누를 때와 뗄 때 다시 내린다
+    hl.bind(b, sink, { non_consuming = true, ignore_mods = true })
+    hl.bind(b, sink, { release = true, non_consuming = true, ignore_mods = true })
 end
 local function half(right) return function() shittim_snap(right and "right" or "left") end end   -- Super + ←/→
 
@@ -275,7 +296,13 @@ local function keep_top(w)
     if not (w.mapped and w.floating) or (w.fullscreen or 0) ~= 0 or (w.xwayland and w.title == "") then return end
     local m = w.monitor
     if not m then return end
-    local top = m.y + (m.reserved.top or 0) + (has_bar(w) and BAR or 0) + 6
+    -- 쓸 수 있는 자리(상단 바 ~ 독 사이)보다 크게 뜨는 창(VS Code 가 지난 크기 1920x1080 을 기억)은 최대화 자리로 맞춘다: 아래가 독 밑으로 잘렸다. 게임은 그대로.
+    local bar = has_bar(w) and BAR or 0
+    if not snapped[w.address] and not w.class:match("^steam_app_")
+       and (w.size.x > m.width or w.size.y + bar > m.height - (m.reserved.top or 0) - (m.reserved.bottom or 0)) then
+        return shittim_snap("max", w)
+    end
+    local top = m.y + (m.reserved.top or 0) + bar + 6
     if w.at.y < top then hl.dispatch(hl.dsp.window.move({ x = w.at.x, y = top, window = "address:" .. w.address })) end
 end
 hl.on("window.open", function(w)
@@ -284,8 +311,11 @@ hl.on("window.open", function(w)
     end
     keep_top(w)
     -- 뜬 직후에 스스로 크기를 키우는 앱이 있어서 0.4초 뒤에 한 번 더 본다 (그 사이 닫힌 창이면 pcall이 넘긴다)
-    local again
-    again = hl.timer(function() again:set_enabled(false); pcall(keep_top, w) end, { timeout = 400, type = "repeat" })
+    -- LibreOffice 는 1초쯤 뒤에야 지난 크기로 커져서 1.5초에도 한 번
+    for _, ms in ipairs({ 400, 1500 }) do
+        local again
+        again = hl.timer(function() again:set_enabled(false); pcall(keep_top, hl.get_window("address:" .. w.address) or w) end, { timeout = ms, type = "repeat" })
+    end
 end)
 -- 한/영 키는 Hyprland가 받아서 입력기를 직접 바꾼다. 앱을 거치면(특히 Wine 카카오톡: 글 칸에 입력기가 안 붙은 순간)
 -- 키가 입력기까지 못 가서 씹혔다. 오른쪽 Alt도 위의 kb_options 때문에 Hangul 로 들어온다.

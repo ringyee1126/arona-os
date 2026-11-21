@@ -22,9 +22,10 @@ Scope {
         const h = Theme.hour
         return Arona.lines[h >= 5 && h < 11 ? "lock-morning" : h >= 11 && h < 18 ? "lock-day" : h >= 18 && h < 23 ? "lock-evening" : "lock-night"]
     }
-    onLineChanged: Arona.speak(line)
+    property bool talking: false      // 대화창이 떠 있을 때만 말한다 (LockView: 키를 눌러 대화창을 열면 켠다). 잠기자마자 혼자 말하지 않게
+    onLineChanged: if (talking) Arona.speak(line)
     function lock() {
-        mood = "smile"; fails = 0; busy = false; pending = ""
+        mood = "smile"; fails = 0; busy = false; pending = ""; talking = false
         line = greeting()
         locked = true
     }

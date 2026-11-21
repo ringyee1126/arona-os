@@ -24,6 +24,8 @@ PanelWindow {
     property int pos: 0
     property int count: 0
     property real progress: 0   // 0~1, 0.5초마다 mpv에 물어본다
+    property bool shuffle: false   // 섞어서 재생: mpv가 재생목록 순서를 섞는다 (끄면 이름 순서로 되돌린다)
+    onShuffleChanged: if (sock.connected) send([shuffle ? "playlist-shuffle" : "playlist-unshuffle"])
     readonly property bool playing: mpv.running && sock.connected && !paused && count > 0
 
     function send(cmd, id) { sock.write(JSON.stringify(id ? { command: cmd, request_id: id } : { command: cmd }) + "\n"); sock.flush() }
@@ -44,6 +46,7 @@ PanelWindow {
         onConnectedChanged: if (connected) {
             const props = ["media-title", "pause", "playlist-pos", "playlist-count"]
             for (let i = 0; i < props.length; i++) music.send(["observe_property", i + 1, props[i]])
+            if (music.shuffle) music.send(["playlist-shuffle"])   // 껐다 켜도 섞기는 그대로
         }
         parser: SplitParser {
             onRead: line => {
@@ -62,12 +65,13 @@ PanelWindow {
         }
     }
 
-    component Ico: Canvas {   // prev | next | play | pause
+    component Ico: Canvas {   // prev | next | play | pause | shuffle
         id: ico
         property string kind: "play"
+        property bool on: true   // 꺼진 단추(섞기)는 흐리게
         signal clicked()
         width: 34 * music.s; height: width
-        opacity: icoMa.containsMouse ? 1 : 0.85
+        opacity: (icoMa.containsMouse ? 1 : 0.85) * (on ? 1 : 0.45)
         scale: icoMa.pressed ? 0.88 : 1
         onKindChanged: requestPaint()
         onPaint: {
@@ -76,6 +80,14 @@ PanelWindow {
             const tri = (x0, x1) => { c.beginPath(); c.moveTo(x0, 2.5 * u); c.lineTo(x1, 5 * u); c.lineTo(x0, 7.5 * u); c.closePath(); c.fill() }
             if (kind === "play") tri(3 * u, 8 * u)
             else if (kind === "pause") { c.fillRect(2.8 * u, 2.5 * u, 1.5 * u, 5 * u); c.fillRect(5.7 * u, 2.5 * u, 1.5 * u, 5 * u) }
+            else if (kind === "shuffle") {   // 엇갈리는 화살표 둘
+                c.strokeStyle = "white"; c.lineWidth = 0.9 * u; c.lineCap = "round"
+                const arrow = (y0, y1) => {
+                    c.beginPath(); c.moveTo(1.8 * u, y0); c.bezierCurveTo(5 * u, y0, 4.5 * u, y1, 7.2 * u, y1); c.stroke()
+                    c.beginPath(); c.moveTo(6.6 * u, y1 - 1.3 * u); c.lineTo(8.6 * u, y1); c.lineTo(6.6 * u, y1 + 1.3 * u); c.closePath(); c.fill()
+                }
+                arrow(3.2 * u, 6.8 * u); arrow(6.8 * u, 3.2 * u)
+            }
             else if (kind === "next") { tri(2.5 * u, 6.5 * u); c.fillRect(6.5 * u, 2.5 * u, 1.2 * u, 5 * u) }
             else { tri(7.5 * u, 3.5 * u); c.fillRect(2.3 * u, 2.5 * u, 1.2 * u, 5 * u) }
         }
@@ -124,6 +136,7 @@ PanelWindow {
             anchors.right: parent.right; anchors.rightMargin: 16 * music.s
             anchors.verticalCenter: nameBox.verticalCenter
             spacing: 6 * music.s
+            Ico { kind: "shuffle"; on: music.shuffle; onClicked: music.shuffle = !music.shuffle }
             Ico { kind: "prev"; onClicked: music.send(["get_property", "time-pos"], 9) }
             Ico { kind: music.playing ? "pause" : "play"; onClicked: music.toggle() }
             Ico { kind: "next"; onClicked: music.go(1) }

@@ -6,6 +6,8 @@ EXTS="md markdown txt log csv json xml pdf zip 7z rar tar gz tgz bz2 xz alz egg 
 if [[ ${1:-} == --register ]]; then
   reg=$(mktemp --suffix=.reg)
   { printf 'REGEDIT4\n\n[HKEY_CLASSES_ROOT\\shittimfile\\shell\\open\\command]\n@="C:\\\\windows\\\\system32\\\\start.exe /unix %s \\"%%1\\""\n\n' "$(realpath "$0")"
+    # Wine 이 이 연결을 리눅스 쪽 기본 앱(wine-extension-*.desktop)으로 내보내지 않게: 내보내면 docx·hwp 더블클릭이 Wine → 이 스크립트 → 다시 Wine 으로 돈다
+    printf '[HKEY_CURRENT_USER\\Software\\Wine\\FileOpenAssociations]\n"Enable"="N"\n\n'
     for e in $EXTS; do printf '[HKEY_CLASSES_ROOT\\.%s]\n@="shittimfile"\n\n' "$e"; done; } > "$reg"
   wine regedit "$reg" >/dev/null 2>&1; rc=$?; rm -f "$reg"; exit $rc
 fi

@@ -92,7 +92,7 @@ PanelWindow {
             }
         }
         Pill {
-            s: bar.s; icon: "battery"
+            s: bar.s; icon: UPower.onBattery ? "battery" : "battery-charging"; pulse: !UPower.onBattery   // 충전기가 꽂혀 있으면 번개 + 깜빡임
             // percentage is 0..1 in current Quickshell; tolerate 0..100 too
             text: bar.bat && bar.bat.isLaptopBattery ? Math.round(bar.bat.percentage <= 1 ? bar.bat.percentage * 100 : bar.bat.percentage) + "%" : "AC"
         }

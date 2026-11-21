@@ -31,13 +31,13 @@ PanelWindow {
         if (a.confirm && armed !== a.key) { armed = a.key; disarm.restart(); Arona.react("power-confirm"); return }
         Ui.menuOpen = false
         if (a.key === "lock") return Quickshell.execDetached(a.cmd)
-        Arona.react("power-" + a.key)   // 인사를 끝까지 하고 나서 끈다
-        if (a.key === "sleep") return sleepCut.start()
-        Quickshell.execDetached(["sh", "-c", "sleep 4; exec \"$@\"", "sh"].concat(a.cmd))
+        Arona.react("power-" + a.key)   // 인사를 끝까지 하고 나서 끈다: 정해진 시간이 아니라 목소리가 끝날 때까지만 기다린다 (shittim-say --wait)
+        if (a.key === "sleep") { sleepCut.running = true; return }
+        Quickshell.execDetached(["sh", "-c", "sleep 0.4; shittim-say --wait; exec \"$@\"", "sh"].concat(a.cmd))
     }
-    // 절전: 대사(4초) → 부팅 컷씬(1.5초, Loading.qml) → 잠그고 절전. 잠금화면은 깨어난 뒤에야 보인다:
+    // 절전: 대사(끝날 때까지) → 부팅 컷씬(1.5초, Loading.qml) → 잠그고 절전. 잠금화면은 깨어난 뒤에야 보인다:
     // Ui.sleeping 동안 Lock.qml이 잠금화면을 어둡게 덮고, 시계가 건너뛰면(= 깨어남) 걷는다. 절전이 실패해도 15초 뒤에는 걷는다.
-    Timer { id: sleepCut; interval: 4000; onTriggered: { Ui.sleeping = true; sleepGo.start() } }
+    Process { id: sleepCut; command: ["sh", "-c", "sleep 0.4; shittim-say --wait"]; onExited: { Ui.sleeping = true; sleepGo.start() } }
     Timer {
         id: sleepGo; interval: 1800
         onTriggered: { Quickshell.execDetached(["sh", "-c", "quickshell ipc call lock lock; sleep 1; systemctl suspend"]); wake.t0 = wake.last = Date.now(); wake.start() }

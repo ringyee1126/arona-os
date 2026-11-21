@@ -28,23 +28,26 @@ PanelWindow {
         { name: "디스코드", icon: "discord", cmd: ["discord"] },
         { name: "카카오톡", icon: "kakao", cmd: ["kakaotalk"] },
         { name: "VS Code", icon: "code", cmd: ["code"] },
-        { name: "Claude", icon: "claude", cmd: ["chromium", "--app=https://claude.ai"] },
-        { name: "Claude Code", icon: "claudecode", cmd: ["kitty", "--title", "Claude Code", "-e", "bash", "-lc", "cd ~; claude; exec bash"] },
+        { name: "Claude", icon: "claude", cmd: ["chromium", "--app=https://claude.ai"], cls: "chrome-claude" },
+        { name: "Claude Code", icon: "claudecode", cmd: ["kitty", "--title", "Claude Code", "-e", "bash", "-lc", "cd ~; claude; exec bash"], title: "Claude" },
         { name: "문서", icon: "docs", cmd: ["libreoffice"] },
         { name: "음악", icon: "music", cmd: ["music"] },
         { name: "설정", icon: "settings", cmd: ["settings"] },
         { name: "터미널", icon: "terminal", cmd: ["kitty"] },
-        { name: "사진", icon: "photos", cmd: ["sh", "-c", "thunar \"$(xdg-user-dir PICTURES)\""] },
-        { name: "동영상", icon: "videos", cmd: ["sh", "-c", "thunar \"$(xdg-user-dir VIDEOS)\""] },
+        { name: "사진", icon: "photos", cmd: ["sh", "-c", "thunar \"$(xdg-user-dir PICTURES)\""], cls: "thunar" },
+        { name: "동영상", icon: "videos", cmd: ["sh", "-c", "thunar \"$(xdg-user-dir VIDEOS)\""], cls: "thunar" },
         { name: "메모장", icon: "notes", cmd: ["mousepad"] },
-        { name: "캡처", icon: "capture", cmd: ["shittim-shot", "region"] },   // ~/사진/스크린샷 + 클립보드
+        { name: "캡처", icon: "capture", cmd: ["shittim-shot", "region"], cls: "-" },   // ~/사진/스크린샷 + 클립보드
         { name: "Steam", icon: "steam", cmd: ["steam"] },
-        { name: "압축", icon: "archive", cmd: ["file-roller"] }
+        { name: "압축", icon: "archive", cmd: ["file-roller"], cls: "FileRoller" }
     ]
     function launch(app) {
         if (app.cmd[0] === "settings") Ui.settings("toggle")
         else if (app.cmd[0] === "music") Ui.musicOpen = !Ui.musicOpen   // 음악 대시보드 (Music.qml)
-        else if (app.cmd.length) { Arona.react("launch"); Quickshell.execDetached(app.cmd) }
+        else if (app.cmd.length) {   // 그 앱의 숨긴(−) 창이 있으면 새로 띄우지 않고 꺼낸다 (cls/title: 창 class·제목이 명령 이름과 다른 앱)
+            Arona.react("launch")
+            Quickshell.execDetached(["sh", "-c", 'shittim-unmin "$1" "$2" && exit; shift 2; exec "$@"', "sh", app.cls || app.cmd[0], app.title || ""].concat(app.cmd))
+        }
         else Arona.say(Arona.lines["not-ready"])
     }
 
@@ -170,7 +173,7 @@ PanelWindow {
         MouseArea {
             id: bigMa; anchors.fill: parent; enabled: dock.workReady
             onPressedChanged: if (pressed) Sfx.tap()
-            onClicked: { Arona.react("work"); Quickshell.execDetached(["sh", "-c", "sleep 3; exec shittim-work"]) }
+            onClicked: { Arona.react("work"); Quickshell.execDetached(["sh", "-c", "sleep 0.4; exec shittim-work"]) }
         }
     }
 }

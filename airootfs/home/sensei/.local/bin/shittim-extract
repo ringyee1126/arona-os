@@ -1,0 +1,24 @@
+#!/usr/bin/env python3
+"""압축 파일을 그 자리에 푼다 (더블클릭 = shittim-extract.desktop).
+zip 은 직접 푼다: Windows(한국어)에서 만든 zip 은 파일 이름이 CP949 라서 file-roller·bsdtar 로 풀면 한글이 깨진다.
+암호가 걸린 zip 과 다른 형식(7z, rar, tar…)은 file-roller 에 맡긴다."""
+import os, sys, zipfile, subprocess
+def roller(f): subprocess.run(["file-roller", "--extract-here", "--notify", f])
+def unzip(f):
+    with zipfile.ZipFile(f) as z:
+        infos = z.infolist()
+        if any(i.flag_bits & 1 for i in infos): return False          # 암호
+        dest = os.path.splitext(f)[0]; n = 1
+        while os.path.exists(dest): n += 1; dest = f"{os.path.splitext(f)[0]} ({n})"
+        for i in infos:
+            if not i.flag_bits & 0x800:                                # UTF-8 표시가 없는 이름: UTF-8 로 읽히면 그대로, 아니면 CP949
+                raw = i.filename.encode("cp437")
+                try: i.filename = raw.decode("utf-8")
+                except UnicodeDecodeError: i.filename = raw.decode("cp949", "replace")
+            z.extract(i, dest)                                         # extract 가 ../ 와 절대 경로를 걸러 낸다
+    subprocess.run(["notify-send", "-a", "아로나", "압축을 풀었어요", os.path.basename(dest)])
+    return True
+for f in sys.argv[1:]:
+    try: ok = zipfile.is_zipfile(f) and unzip(f)
+    except (zipfile.BadZipFile, OSError, NotImplementedError, ValueError): ok = False
+    if not ok: roller(f)

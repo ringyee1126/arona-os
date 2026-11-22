@@ -2,7 +2,7 @@
 # 로그인 화면(greetd, greeter 사용자)이 쓸 파일을 sensei 의 셸 설정에서 복사한다. 루트로 실행
 # (shittim-postinstall, 그리고 성격이 바뀔 때 shittim-splash-who).
 # greeter 사용자는 /home/sensei 를 읽지 못한다(읽게 해서도 안 된다): QML 과 그림만 /usr/share/shittim-greeter 로 옮긴다.
-# 목소리와 API 키(arona.json)는 옮기지 않는다. 성격(아로나/프라나)만 알려 준다.
+# API 키(arona.json)는 옮기지 않는다. 성격·목소리 설정과 잠금 대사 녹음만 /var/lib/shittim-greeter 로 옮긴다.
 # 보안: sensei 의 폴더는 sensei 권한으로만 읽는다 - 루트로 읽으면 그 폴더를 심볼릭 링크로 바꿔 루트만 볼 수 있는 파일을
 # 모두가 읽는 곳으로 빼낼 수 있다. 받는 쪽 폴더는 전부 루트 소유다 (greeter 가 링크를 심어 루트가 엉뚱한 파일을 덮어쓰지 못하게).
 Q=/home/sensei/.config/quickshell; D=/usr/share/shittim-greeter; H=/var/lib/shittim-greeter
@@ -14,6 +14,23 @@ as tar -C $Q --exclude=./assets/voice --exclude=./.omc -cf - . | tar -C "$N" -xf
 chown -R root:root "$N"; chmod -R u=rwX,go=rX,a-s "$N"
 rm -rf $D && mv "$N" $D || exit 1
 
-who=arona; as grep -Eqs '"persona" *: *"plana"' /home/sensei/.config/shittim/arona.json && who=plana
-rm -rf $H && install -d -m755 -o root -g root $H/.config/shittim || exit 1
-printf '{"persona": "%s", "voice": false}\n' $who > $H/.config/shittim/arona.json
+# 성격·목소리 설정만 알려 준다 (API 키 등 나머지는 옮기지 않는다). 값은 정해진 것만 통과시킨다
+cfg=$(as python3 -c '
+import json
+c = json.load(open("/home/sensei/.config/shittim/arona.json"))
+try: vol = max(0.0, min(1.0, float(c.get("voiceVol", 1))))
+except (TypeError, ValueError): vol = 1.0
+print(json.dumps({"persona": "plana" if c.get("persona") == "plana" else "arona", "voice": c.get("voice") is not False,
+                  "voiceVol": vol, "voiceLang": "ja" if c.get("voiceLang") == "ja" else "ko"}))' 2>/dev/null) \
+    || cfg='{"persona": "arona", "voice": false}'
+case $cfg in *'"persona": "plana"'*) who=plana;; *) who=arona;; esac
+rm -rf $H && install -d -m755 -o root -g root $H/.config/shittim $H/.config/quickshell/assets/voice/$who $H/.local/bin || exit 1
+printf '%s\n' "$cfg" > $H/.config/shittim/arona.json
+
+# 목소리: 로그인 화면이 하는 말(lock-*)의 녹음과 그것을 트는 shittim-say 만 옮긴다 (Arona.speak 는 $HOME 아래에서 찾는다).
+# 일본어를 골랐고 그 녹음이 있으면 일본어 것을 같은 자리에 둔다 (로그인 화면의 shittim-say 는 언어를 모른다). 없으면 조용하다.
+V=$Q/assets/voice/$who
+case $cfg in *'"voiceLang": "ja"'*) as test -f $V-ja/lock-ok.wav && V=$V-ja;; esac
+as sh -c "cd $V && tar -cf - lock-*.wav" 2>/dev/null | tar -C $H/.config/quickshell/assets/voice/$who -xf - --no-same-owner --no-same-permissions 2>/dev/null
+as cat /home/sensei/.local/bin/shittim-say 2>/dev/null > $H/.local/bin/shittim-say
+chown -R root:root $H; chmod -R u=rwX,go=rX,a-s $H; chmod 755 $H/.local/bin/shittim-say

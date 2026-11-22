@@ -36,10 +36,12 @@ Scope {
     Component.onCompleted: {
         // SHITTIM_GREETED: greetd 로그인 화면(greeter.qml)에서 방금 비밀번호를 확인하고 들어온 세션이면 또 잠그지 않는다.
         // (예전 방식 = 자동 로그인인 컴퓨터와 설치 USB 에서는 이 값이 없어서 지금처럼 바로 잠근다.)
-        if (!locked && bootMark.text() === "") { bootMark.setText("1"); if (!Quickshell.env("SHITTIM_GREETED")) lock() }
+        if (!locked && bootMark.text() === "") { bootMark.setText("1"); if (Quickshell.env("SHITTIM_GREETED")) welcome.start(); else lock() }
         // after a shell reload while locked, the dialogue would be empty
         if (locked && line === "") line = greeting()
     }
+    // 로그인 화면에서 막 들어왔을 때의 첫 인사 (말풍선 + 목소리). 1.5초: 바탕화면과 소리 장치가 뜬 뒤에
+    Timer { id: welcome; interval: 1500; onTriggered: Arona.say(Arona.lines["lock-ok"]) }
     function submit(pw) {
         if (busy || pw === "") return
         pending = pw

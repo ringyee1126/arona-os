@@ -16,6 +16,7 @@ ShellRoot {
         property bool busy: false
         property int fails: 0
         property bool talking: false
+        onLineChanged: if (talking) Arona.speak(line)   // Lock.qml 과 같게: 대화창이 떠 있으면 바뀐 대사를 말한다
         property string pending: ""
         signal failed()
         function submit(pw) {
@@ -35,7 +36,8 @@ ShellRoot {
         }
         function onError(error) { auth.done(Arona.lines["lock-error"], "surprised") }
         function onReadyToLaunch() {
-            auth.pending = ""; auth.mood = "happy"; auth.line = Arona.lines["lock-ok"]
+            // "어서 오세요"는 여기서 말하지 않는다: 0.9초 뒤 이 화면이 끝나면서 끊긴다. 방금 시작한 세션이 말한다 (Lock.qml 의 welcome)
+            auth.talking = false; auth.pending = ""; auth.mood = "happy"; auth.line = Arona.lines["lock-ok"]
             launch.start()
         }
     }

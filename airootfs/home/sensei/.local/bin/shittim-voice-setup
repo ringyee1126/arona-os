@@ -1,0 +1,11 @@
+#!/bin/sh
+# 아로나·프라나 목소리 만들기 (몇 시간 걸린다. 블루 아카이브가 Steam 에 설치돼 있어야 한다).
+#   shittim-voice-setup       한국어 목소리
+#   shittim-voice-setup ja    일본어 목소리 (설정 → 소리 → 목소리 언어)
+# 도구는 ARONA OS 저장소의 tools/ 에 있다: 개발 노트북은 ~/shittim-os, 업데이트로 받은 컴퓨터는 ~/.local/share/arona-os
+for d in "$HOME/shittim-os" "$HOME/.local/share/arona-os"; do
+    [ -f "$d/tools/voice-setup.sh" ] && { T=$d/tools; break; }
+done
+[ -n "$T" ] || { echo "도구가 없어요. 아로나 검색에서 'ARONA OS 업데이트'를 먼저 실행해 주세요."; exit 1; }
+[ "$1" = ja ] && exec bash "$T/voice-setup-ja.sh"
+exec bash "$T/voice-setup.sh"

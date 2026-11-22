@@ -209,6 +209,9 @@ Singleton {
             property string memoryNotes: ""
             property bool sounds: true          // 버튼 효과음 (Sfx.qml)
             property bool voice: true           // 녹음된 대사 재생 (speak())
+            // 아래 둘은 ~/.local/bin/shittim-say 가 이 파일에서 직접 읽는다
+            property real voiceVol: 1.0         // 목소리 크기 0~1 (시스템 음량과 따로)
+            property string voiceLang: "ko"     // "ko" | "ja" (일본어 목소리는 shittim-voice-setup ja 로 만들어야 나온다)
         }
     }
 

@@ -19,10 +19,13 @@ READ = {r"caps\s*lock": "캡스 락", r"wi-?fi": "와이파이", r"\bgemini\b": 
 def clean(text):
     """읽을 문장들로: 코드·주소·꾸밈 기호를 빼고 문장 부호에서 자른다."""
     t = re.sub(r"```.*?```", " ", text, flags=re.S)
-    for a, b in READ.items(): t = re.sub(a, b, t, flags=re.I)
+    if re.search(r"[가-힣]", t):                              # 일본어 대본에는 한글 읽는 법을 섞지 않는다
+        for a, b in READ.items(): t = re.sub(a, b, t, flags=re.I)
     t = re.sub(r"https?://\S+", " ", t)
     t = re.sub(r"\[\[[^\]]*\]\]|[*_`#>|~^]+", " ", t)
-    t = re.sub(r"[^\w\s가-힣.,!?…~'\"%:()\-+/]", " ", t)           # 그림 문자 등
+    # 일본어 문장 부호: ！？ 는 반각으로, 문장 사이에 빈칸이 없으니 넣어 준다 (아래에서 빈칸으로 문장을 나눈다)
+    t = re.sub(r"([。!?])(?=[぀-ヿ一-鿿])", r"\1 ", t.replace("！", "!").replace("？", "?"))
+    t = re.sub(r"[^\w\s가-힣.,!?…~'\"%:()\-+/。、]", " ", t)        # 그림 문자 등
     t = t.replace("…", "... ")
     # "…하실 거예요, 선생님?" 은 묻는 말이 쉼표 앞에 있다: "…하실 거예요? 선생님?" 으로 읽혀야 끝이 올라간다 (한 문장으로 유지)
     t = re.sub(r",\s*(선생님)\s*\?", r"?ZZJOINZZ\1?", t)
@@ -39,6 +42,7 @@ jobs = queue.Queue()       # (gen, who, text, out, conn)
 playq = queue.Queue()      # (gen, wav 경로)
 last = time.time()
 player = None
+vol = 1.0                  # 목소리 크기 (설정 → 소리; shittim-say 가 요청마다 알려 준다)
 
 def stop_playing():
     while not playq.empty():
@@ -51,7 +55,7 @@ def play_loop():
     while True:
         g, path = playq.get()
         if g == gen:
-            player = subprocess.Popen(PLAY + [path]); player.wait(); last = time.time()
+            player = subprocess.Popen(PLAY + ["--volume", str(vol), path]); player.wait(); last = time.time()
         try: os.remove(path)
         except OSError: pass
 
@@ -82,8 +86,11 @@ def work_loop():
             for i, s in enumerate(clean(text)):
                 if g != gen and not out: break
                 # 묻는 문장("?" 또는 "…까.")은 묻는 말투의 참조 음성(ref-q)으로: 억양은 참조를 따라간다. 평서문 참조로는 물음표가 안 들렸다.
-                r = "ref-q" if re.search(r"(\?|까\.)$", s) and (v / "ref-q.wav").exists() else "ref"
-                req = dict(text=s, text_lang="ko", ref_audio_path=str(v / f"{r}.wav"), prompt_text=(v / f"{r}.txt").read_text().strip(), prompt_lang="ko",
+                r = "ref-q" if re.search(r"(\?|까\.|か。)$", s) and (v / "ref-q.wav").exists() else "ref"
+                # <who>-ja = 일본어 음성으로 학습한 목소리: 참조 음성은 일본어, 읽을 글은 한글이 있으면 한국어로 읽는다
+                ja = who.endswith("-ja")
+                req = dict(text=s, text_lang="ja" if ja and not re.search(r"[가-힣]", s) else "ko", ref_audio_path=str(v / f"{r}.wav"),
+                           prompt_text=(v / f"{r}.txt").read_text().strip(), prompt_lang="ja" if ja else "ko",
                            aux_ref_audio_paths=sorted(str(p) for p in v.glob("aux*.wav")),
                            text_split_method="cut0", batch_size=1, top_k=15, top_p=1, temperature=0.9, speed_factor=1.0,
                            fragment_interval=0.25, seed=-1, parallel_infer=True, repetition_penalty=1.35)
@@ -109,7 +116,7 @@ def work_loop():
             if conn: conn.close()
 
 def main():
-    global gen, last
+    global gen, last, vol
     try: os.unlink(SOCK)
     except OSError: pass
     srv = socket.socket(socket.AF_UNIX); srv.bind(SOCK); srv.listen(8); srv.settimeout(30)
@@ -128,6 +135,7 @@ def main():
         if m.get("out"): jobs.put((gen, m.get("who", "arona"), m.get("text", ""), m["out"], conn)); continue
         conn.close()
         if m.get("stop") or m.get("text"): gen += 1; stop_playing()
+        if "vol" in m: vol = float(m["vol"])
         if m.get("text"): jobs.put((gen, m.get("who", "arona"), m["text"], None, None))
 
 if __name__ == "__main__":

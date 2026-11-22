@@ -121,6 +121,8 @@ PanelWindow {
                     width: cnt.implicitWidth + 20 * desk.s; height: 26 * desk.s; radius: 13 * desk.s; color: "#4DFFFFFF"
                     Text { id: cnt; anchors.centerIn: parent; text: "알림 " + Notifs.list.length; color: "white"; font.family: Theme.font; font.pixelSize: 15 * desk.s; font.weight: Font.Bold }
                 }
+                // 분홍 머리를 누르면 알림을 모아 보는 창 (NotifCenter.qml)
+                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onPressedChanged: if (pressed) Sfx.tap(); onClicked: Ui.notifsOpen = true }
             }
             Repeater {
                 model: Notifs.list.slice(-4).reverse()

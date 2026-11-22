@@ -10,6 +10,7 @@ Singleton {
     property bool chatOpen: false            // MomoTalk with the desktop Arona
     property bool musicOpen: false           // 왼쪽 아래 음악 대시보드 (Music.qml), 독의 "음악" 버튼
     property bool sleeping: false            // 절전 직전: 부팅 컷씬(Loading.qml)이 덮고 있다
+    property bool notifsOpen: false          // 알림 모아 보기 (NotifCenter.qml), MomoTalk 카드의 분홍 머리를 누르면
     property bool menuOpen: false            // top-right ≡: power + quick controls (PowerMenu.qml)
 
     function openSettings(page) { settingsPage = page || settingsPage; settingsOpen = true }

@@ -21,7 +21,6 @@ install -m644 "$R/usr/share/plymouth/themes/shittim/shittim.script" /usr/share/p
 for d in plymouth-quit plymouth-poweroff plymouth-reboot; do
   install -Dm644 "$R/etc/systemd/system/$d.service.d/shittim.conf" "/etc/systemd/system/$d.service.d/shittim.conf"
 done
-install -m644 "$R/etc/systemd/system/getty@tty1.service.d/autologin.conf" /etc/systemd/system/getty@tty1.service.d/autologin.conf
 systemctl daemon-reload
 # GRUB: 메뉴를 숨기고(Esc를 누르면 나옴) 커서·부팅 글자를 끈다
 sed -i -e 's/^GRUB_TIMEOUT=.*/GRUB_TIMEOUT=1/' -e 's/^GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=hidden/' \

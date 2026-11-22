@@ -5,6 +5,27 @@
 hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })
 hl.monitor({ output = "Virtual-1", mode = "1600x1000", position = "auto", scale = 1 })
 
+-- 콜백(타이머·이벤트·단축키 함수) 안에서 Lua 오류가 나면 Hyprland 가 화면 오른쪽 위에 "Runtime error in lua" 알림을 띄우고
+-- 로그에는 남기지 않는다. 모든 콜백을 감싸서 알림 대신 ~/.cache/shittim-lua.log 에 적는다 (같은 오류는 한 번만).
+do
+    local seen = {}
+    local function safe(f)
+        if type(f) ~= "function" then return f end
+        return function(...)
+            local r = table.pack(xpcall(f, debug.traceback, ...))
+            if r[1] then return table.unpack(r, 2, r.n) end
+            if seen[r[2]] then return end
+            seen[r[2]] = true
+            local h = io.open(os.getenv("HOME") .. "/.cache/shittim-lua.log", "a")
+            if h then h:write(os.date("%F %T "), tostring(r[2]), "\n"); h:close() end
+        end
+    end
+    local timer, on, bind = hl.timer, hl.on, hl.bind
+    hl.timer = function(f, ...) return timer(safe(f), ...) end
+    hl.on    = function(ev, f, ...) return on(ev, safe(f), ...) end
+    hl.bind  = function(keys, f, ...) return bind(keys, safe(f), ...) end
+end
+
 hl.env("XMODIFIERS", "@im=fcitx")
 hl.env("QT_IM_MODULE", "fcitx")
 
@@ -26,8 +47,11 @@ hl.on("hyprland.start", function()
     -- the shell (desktop, dock, Arona, lock screen). If it ever crashes it comes straight back - locked, to be safe.
     hl.exec_cmd([[sh -c 'while :; do quickshell; pgrep -x Hyprland >/dev/null || exit; sleep 1;
         (for i in $(seq 30); do sleep 1; quickshell ipc call lock lock >/dev/null 2>&1 && break; done) & done']])
-    -- the lock screen is also the login screen: the session autologs in, then locks once the shell is up
-    hl.exec_cmd("sh -c 'for i in $(seq 60); do quickshell ipc call lock lock && break; sleep 1; done'")
+    -- 예전 방식(자동 로그인)인 컴퓨터와 설치 USB: 잠금화면이 로그인 화면 노릇을 한다 - 셸이 뜨면 바로 잠근다.
+    -- greetd 로그인 화면(greeter.qml)을 거쳐 들어온 세션(SHITTIM_GREETED)은 이미 비밀번호를 확인했으니 잠그지 않는다.
+    if not os.getenv("SHITTIM_GREETED") then
+        hl.exec_cmd("sh -c 'for i in $(seq 60); do quickshell ipc call lock lock && break; sleep 1; done'")
+    end
 end)
 
 hl.config({

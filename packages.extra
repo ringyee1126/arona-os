@@ -22,4 +22,5 @@ nvidia-prime          # prime-run: 외장 그래픽으로 실행 (Steam 실행 �
 vulkan-intel          # Intel 내장 그래픽 Vulkan
 lib32-vulkan-intel    # 위와 같음, 32비트
 intel-media-driver    # Intel 내장 그래픽 동영상 가속
-jre-openjdk-headless  # hwp/hwpx 열기: LibreOffice 확장 H2Orestart 가 Java 를 쓴다 (tools/setup-hwp.sh)
+greetd                # 로그인 화면: 비밀번호가 맞아야 세션을 시작한다 (자동 로그인 + 잠금화면 대신; shittim-postinstall)
+jre-openjdk-headless # hwp/hwpx 열기: LibreOffice 확장 H2Orestart 가 Java 를 쓴다 (tools/setup-hwp.sh)

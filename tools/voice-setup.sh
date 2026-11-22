@@ -22,6 +22,7 @@ venv/bin/python -c 'import zipfile,sys,tarfile,os,pyopenjtalk
 zipfile.ZipFile("pretrained_models.zip").extractall("GPT-SoVITS/GPT_SoVITS"); zipfile.ZipFile("nltk_data.zip").extractall(sys.prefix)
 tarfile.open("ojt.tar.gz").extractall(os.path.dirname(pyopenjtalk.__file__))'
 rm -f pretrained_models.zip nltk_data.zip ojt.tar.gz
+[[ ${1:-} == env ]] && exit 0     # voice-setup-ja.sh: 환경만 설치하고 일본어 목소리만 만들 때
 # 2) 음성 꺼내기 → 받아쓰기 → 학습 목록 (아로나는 손으로 고쳐 둔 목록 tools/arona.list 를 쓴다)
 python "$T/molru-extract.py" "$A/KR_Arona.molru" raw/KR_Arona; python "$T/molru-extract.py" "$A/KR_NP0035.molru" raw/KR_NP0035
 cp "$T/asr.py" "$T/mklist.py" .

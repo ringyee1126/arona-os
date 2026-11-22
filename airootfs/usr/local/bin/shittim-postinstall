@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# 설치된 ARONA OS 를 배포 기준 상태로 맞춘다. 루트로 실행, 여러 번 돌려도 된다.
+# 새 설치(shittim-install 의 chroot 안)와 업데이트(tools/apply-update.sh)가 같이 쓴다. 라이브 USB 에서는 돌리지 않는다.
+# 바뀐 것은 다시 시작한 뒤부터 적용된다 (돌아가는 세션은 건드리지 않는다. sshd 만 바로 끈다).
+[[ $EUID -eq 0 ]] || { echo "루트로 실행해 주세요"; exit 1; }
+q() { "$@" >/dev/null 2>&1 || true; }
+
+# 1) 로그인: 비밀번호 없는 자동 로그인 + 잠금화면 → greetd 로그인 화면 (비밀번호가 맞아야 세션이 시작된다)
+if command -v greetd >/dev/null && [[ -x /usr/local/bin/shittim-greeter && -f /etc/greetd/hyprland.lua ]] \
+   && /usr/local/bin/shittim-greeter-sync && [[ -f /usr/share/shittim-greeter/greeter.qml ]]; then
+    rm -f /etc/systemd/system/getty@tty1.service.d/autologin.conf
+    systemctl enable greetd.service >/dev/null 2>&1 && echo "로그인 화면: greetd 적용 (다시 시작하면 바뀝니다)"
+else
+    echo "로그인 화면: greetd 를 적용하지 못했어요 - 예전 방식(자동 로그인 + 잠금화면) 그대로입니다"
+fi
+
+# 2) 원격 접속(SSH) 끄기: 설치 USB 의 설정(비밀번호 로그인 허용, root 로그인 허용)이 설치된 시스템에 그대로 남아 켜져 있었다.
+#    다시 쓰려면: sudo systemctl enable --now sshd
+q systemctl disable sshd.service; q systemctl stop sshd.service
+rm -f /etc/ssh/sshd_config.d/10-archiso.conf
+
+# 3) 설치 USB 에서 딸려 온, 설치된 컴퓨터에서는 쓸모없는 서비스
+#    cloud-init = 클라우드 서버용 초기 설정.  systemd-networkd = NetworkManager 와 같은 일을 겹쳐서 하고 있었다(부팅 지연).
+q systemctl disable cloud-init-local.service cloud-init-main.service cloud-init-network.service cloud-config.service cloud-final.service
+q systemctl disable systemd-networkd.service systemd-networkd-wait-online.service systemd-network-generator.service
+rm -f /etc/systemd/network/20-ethernet.network /etc/systemd/network/20-wlan.network /etc/systemd/network/20-wwan.network
+
+# 4) 설치 USB 전용 패키지 (복구·복제 도구, 화면 낭독, 라이브 부팅용). 가상 머신 도구와 네트워크 도구는 쓰는 사람이 있을 수 있어 둔다.
+P="cloud-init archinstall clonezilla partimage partclone fsarchiver ddrescue espeakup brltty livecd-sounds
+   mkinitcpio-archiso mkinitcpio-nfs-utils nbd open-iscsi darkhttpd irssi lynx lftp refind syslinux edk2-shell"
+have=$(pacman -Qq $P 2>/dev/null | tr '\n' ' ')
+if [[ -n $have ]]; then
+    # 한 번에 지우고, 다른 패키지가 그중 하나를 필요로 해서 안 되면 하나씩 (필요한 것은 남는다)
+    pacman -Rns --noconfirm $have >/dev/null 2>&1 || for p in $have; do q pacman -Rns --noconfirm "$p"; done
+    echo "지운 패키지: $(comm -23 <(tr ' ' '\n' <<<"$have" | sort) <(pacman -Qq | sort) | tr '\n' ' ')"
+fi
+exit 0

@@ -115,6 +115,9 @@ sed -i 's/^TIMELINE_CREATE=.*/TIMELINE_CREATE="no"/; s/^NUMBER_LIMIT=.*/NUMBER_L
 systemctl enable grub-btrfsd.service >/dev/null 2>&1 || true
 # 설치된 시스템에서만 켠다 (라이브 USB에서는 initramfs를 다시 만들면 안 된다): 캐릭터에 맞춘 컷씬 색, 인쇄
 systemctl enable shittim-splash-who.service shittim-splash-who.path cups.socket >/dev/null 2>&1 || true
+# 로그인 화면(greetd: 비밀번호가 맞아야 세션 시작), 원격 접속(SSH) 끄기, 설치 USB 전용 서비스·패키지 정리.
+# SNAP_PAC_SKIP: chroot 안에는 D-Bus 가 없어서 snap-pac 의 스냅샷 훅이 패키지 삭제를 막는다.
+SNAP_PAC_SKIP=y /usr/local/bin/shittim-postinstall || true
 # 설치 USB용 설정(pacman 열쇠고리를 메모리에 두는 것)은 설치된 시스템에 남기지 않는다: 남으면 다시 시작할 때마다
 # 열쇠고리가 비워져 pacman이 "키를 가져올 수 없음"으로 실패한다.
 rm -f /etc/systemd/system/etc-pacman.d-gnupg.mount

@@ -666,6 +666,29 @@ FloatingWindow {
                     Toggle { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; on: Arona.settings.voice; onToggled: Arona.settings.voice = !Arona.settings.voice }
                 }
                 Sub { text: "인사와 대화 답변을 학습한 목소리로 읽어 주고, 음량을 바꾸면 목소리로 크기를 알려줘요." }
+                Line {}
+                Item {   // 목소리만 따로 크기 조절 (shittim-say 가 pw-play --volume 으로 쓴다)
+                    width: parent.width; height: 48 * win.s
+                    Label { anchors.verticalCenter: parent.verticalCenter; width: 110 * win.s; text: "목소리 크기"; font.pixelSize: 18 * win.s }
+                    Slider {
+                        x: 120 * win.s; anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width - x - 200 * win.s
+                        value: Arona.settings.voiceVol
+                        onMoved: v => Arona.settings.voiceVol = Math.round(v * 20) / 20
+                    }
+                    T { anchors.right: tryBtn.left; anchors.rightMargin: 18 * win.s; anchors.verticalCenter: parent.verticalCenter; text: Math.round(Arona.settings.voiceVol * 100) + "%"; font.weight: Font.Bold }
+                    Btn { id: tryBtn; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; s: win.s; primary: false; text: "들어보기"; onClicked: Arona.speak(Arona.pick("chat")) }
+                }
+                Item {
+                    width: parent.width; height: 48 * win.s
+                    Label { anchors.verticalCenter: parent.verticalCenter; width: 110 * win.s; text: "목소리 언어"; font.pixelSize: 18 * win.s }
+                    Row {
+                        x: 120 * win.s; anchors.verticalCenter: parent.verticalCenter; spacing: 10 * win.s
+                        Btn { s: win.s; primary: Arona.settings.voiceLang !== "ja"; text: "한국어"; onClicked: Arona.settings.voiceLang = "ko" }
+                        Btn { s: win.s; primary: Arona.settings.voiceLang === "ja"; text: "일본어"; onClicked: Arona.settings.voiceLang = "ja" }
+                    }
+                }
+                Sub { width: parent.width; wrapMode: Text.Wrap; text: "일본어 목소리는 따로 만들어야 나와요(없으면 한국어로 말해요). 블루 아카이브를 설치한 뒤 터미널에서: shittim-voice-setup ja" }
             }
             Item {
                 width: parent.width; height: mixBtn.height

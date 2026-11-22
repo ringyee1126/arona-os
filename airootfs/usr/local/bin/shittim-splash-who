@@ -3,6 +3,7 @@
 # 부팅 컷씬 그림은 initramfs 안에 있어서, 캐릭터가 바뀐 때에만 그림을 바꿔 넣고 initramfs를 다시 만든다 (약 10~20초).
 trap '' TERM    # 다시 만드는 도중에 전원을 꺼도 끝까지 한다 (서비스의 KillMode=mixed 와 한 쌍)
 T=/usr/share/plymouth/themes/shittim
+[ -x /usr/local/bin/shittim-greeter-sync ] && /usr/local/bin/shittim-greeter-sync    # 로그인 화면(greetd)의 캐릭터도 맞춘다
 # 다시 만드는 동안(약 10초) 캐릭터를 또 바꾸면 .path 유닛이 그 변경을 놓친다: 끝난 뒤 다시 확인해서 맞을 때까지 돈다.
 while :; do
     who=arona; grep -Eqs '"persona" *: *"plana"' /home/sensei/.config/shittim/arona.json && who=plana

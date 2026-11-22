@@ -18,6 +18,7 @@ ShellRoot {
     Music { screen: Quickshell.screens[0] }
     Capture { screen: Quickshell.screens[0] }
     SnapPreview { screen: Quickshell.screens[0] }
+    NotifCenter { screen: Quickshell.screens[0] }
     // Super+I (설정) / Super+A (아로나와 대화); "settings open bluetooth" opens a given page.
     // 설정 itself runs in its own process (settings-app.qml), see Ui.settings().
     IpcHandler {
@@ -44,6 +45,10 @@ ShellRoot {
     IpcHandler {   // 음악 대시보드: quickshell ipc call music toggle
         target: "music"
         function toggle(): void { Ui.musicOpen = !Ui.musicOpen }
+    }
+    IpcHandler {   // 알림 모아 보기: quickshell ipc call notifs toggle
+        target: "notifs"
+        function toggle(): void { Ui.notifsOpen = !Ui.notifsOpen }
     }
     IpcHandler {
         target: "chat"

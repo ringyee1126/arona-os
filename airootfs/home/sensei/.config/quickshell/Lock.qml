@@ -34,7 +34,9 @@ Scope {
     // /run/user/<uid>, so it is gone after a logout or reboot but survives shell reloads.
     FileView { id: bootMark; path: Quickshell.env("XDG_RUNTIME_DIR") + "/shittim-locked-once"; blockLoading: true; printErrors: false }
     Component.onCompleted: {
-        if (!locked && bootMark.text() === "") { bootMark.setText("1"); lock() }
+        // SHITTIM_GREETED: greetd 로그인 화면(greeter.qml)에서 방금 비밀번호를 확인하고 들어온 세션이면 또 잠그지 않는다.
+        // (예전 방식 = 자동 로그인인 컴퓨터와 설치 USB 에서는 이 값이 없어서 지금처럼 바로 잠근다.)
+        if (!locked && bootMark.text() === "") { bootMark.setText("1"); if (!Quickshell.env("SHITTIM_GREETED")) lock() }
         // after a shell reload while locked, the dialogue would be empty
         if (locked && line === "") line = greeting()
     }

@@ -267,3 +267,30 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
   (시험: `zipfile.ZipInfo._encodeFilenameFlags` 를 바꿔 CP949 이름·UTF-8 표시 없는 zip 을 만든다). 암호 zip·7z·rar·tar 는 file-roller.
 - 쓸 수 있는 자리(상단 바~독)보다 크게 뜨는 창(VS Code 1920x1080, LibreOffice)은 `keep_top` 이 최대화 자리로 맞춘다(뜬 뒤 0.4초·1.5초에도 확인). `steam_app_*` 는 제외.
 - LibreOffice "오늘의 팁" 창 끔: `~/.config/libreoffice/4/user/registrymodifications.xcu` 의 `ShowTipOfTheDay=false` (이 노트북만; 새 설치는 첫 실행 때 체크를 끄면 된다).
+
+## 로그인 화면(greetd)·SSH·업데이트·일본어 목소리·알림 모아 보기 (2026-11-22 저녁)
+배포 뒤 받은 지적: "자동 로그인 + Quickshell 잠금은 화면 보호기일 뿐, SDDM 같은 것으로 해야 한다". 확인한 사실 두 가지:
+(1) tty1 이 비밀번호 없이 자동 로그인하고 셸이 뜬 뒤에야 잠갔다(셸이 못 뜨면 바탕화면이 열려 있다).
+(2) 설치 USB 의 sshd(`10-archiso.conf`: 비밀번호·root 로그인 허용)가 설치된 시스템에 그대로 켜져 있었다.
+- 로그인: **greetd** → `/usr/local/bin/shittim-greeter`(greeter 사용자) → `start-hyprland -- --config /etc/greetd/hyprland.lua` → `greeter.qml`
+  (`LockView` 재사용, `Quickshell.Services.Greetd`). 비밀번호가 맞으면 `bash -lc 'exec start-hyprland'` 를 `SHITTIM_GREETED=1` 로 시작하고,
+  그 값이 있으면 셸·hyprland.lua 가 시작할 때 잠그지 않는다. 값이 없는 곳(설치 USB, 아직 업데이트 안 한 컴퓨터)은 예전처럼 바로 잠근다.
+  greeter 는 `/home/sensei` 를 못 읽어서 `shittim-greeter-sync`(루트)가 QML·그림을 `/usr/share/shittim-greeter` 로, 성격만 `/var/lib/shittim-greeter` 로 복사한다
+  (**QML 을 고친 뒤 로그인 화면에도 반영하려면 `sudo shittim-greeter-sync`**; 성격이 바뀌면 shittim-splash-who 가 부른다). 로그인 화면에서는 목소리가 안 난다.
+  로그인 화면이 3초 안에 죽으면 글자 로그인(agreety). QML 에서 `id: ctl`/`id: login` 은 LockView 의 같은 이름 속성에 가려진다 → `id: auth`.
+- 시험: `tools/fake-greetd.py`(가짜 greetd) + 창 안의 Hyprland(`Hyprland --config <greeter 설정>`)로 화면과 인증 흐름(틀림 → 다시 → 맞음 → start_session)을 확인했다.
+  **실제 부팅(greetd·PAM·VT 넘기기)은 미확인**: `sudo bash tools/apply-update.sh` 후 다시 시작해서 확인할 것. 안 되면 Ctrl+Alt+F2 로 로그인해
+  `sudo systemctl disable greetd && sudo install -Dm644 ~/shittim-os/airootfs/etc/systemd/system/getty@tty1.service.d/autologin.conf /etc/systemd/system/getty@tty1.service.d/autologin.conf`.
+- `shittim-postinstall`(루트, 새 설치와 업데이트 공용): greetd 켜기 + 자동 로그인 끄기, sshd 끄기, cloud-init·systemd-networkd 끄기, 설치 USB 전용 패키지 삭제.
+  ISO 의 패키지 목록(`packages.x86_64`)은 그대로다(라이브 부팅에 필요한 것이 섞여 있다) - 설치할 때 지운다. **이 경로(shittim-install 안)도 미확인.**
+- 업데이트: `tools/update.sh`(사용자: 저장소를 `~/.local/share/arona-os` 에 받아 셸·hyprland.lua·~/.local/bin 을 덮어씀, 나머지 설정은 없는 것만)
+  → `tools/apply-update.sh`(루트). 이 노트북(`~/shittim-os` 가 있음)에서는 설정을 덮어쓰지 않고 루트 부분만 한다. 아로나 검색의 "ARONA OS 업데이트".
+- "Runtime error in lua" 알림: 콜백 안의 Lua 오류다(로그에 안 남는다). hyprland.lua 맨 위에서 `hl.timer/on/bind` 의 콜백을 xpcall 로 감싸
+  `~/.cache/shittim-lua.log` 에 적는다. **어느 콜백이 원인인지는 미확정**(시험 중에는 재현되지 않았다) → 그 로그에 줄이 생기면 그 자리를 고칠 것.
+- 목소리: `arona.json` 의 `voiceVol`(0~1, `pw-play --volume`)·`voiceLang`(`ko`/`ja`)을 `shittim-say` 가 직접 읽는다. 일본어 = `voices/<who>-ja` + `assets/voice/<who>-ja/`,
+  `shittim-voice-setup ja`(= `tools/voice-setup-ja.sh`, 대본 `tools/voice-lines-ja.json`). 없으면 한국어로 말한다. **일본어 학습·합성은 돌려 보지 않았다**
+  (VOC_JP 꺼내기·받아쓰기·참조 고르기만 확인). `Arona.qml` 의 대사를 고치면 `voice-lines-ja.json` 도 고칠 것.
+- 알림 모아 보기: `NotifCenter.qml`, MomoTalk 카드의 분홍 머리 = `Ui.notifsOpen` (`quickshell ipc call notifs toggle`).
+- **아직 GitHub 에 올리지 않았다 (사용자 결정, 2026-11-22): 이 노트북에서 먼저 시험.** 로컬 커밋만 있다. 사용자가 `sudo bash ~/shittim-os/tools/apply-update.sh`
+  → 다시 시작 → 로그인 화면 확인 후 "배포해줘"라고 하면: `git push origin main` + `gh release create`(업데이트 안내, README 의 "업데이트" 절 내용, `tools/update.sh` 첨부).
+  ISO 는 다시 만들지 않는다(사용자 요청) - 2026-11-22 ISO 로 설치한 사람은 설치 뒤 업데이트를 실행한다.

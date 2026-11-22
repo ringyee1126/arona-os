@@ -5,6 +5,16 @@
 import os, sys, json, socket, subprocess, time
 HOME = os.path.expanduser("~"); D = HOME + "/.local/share/shittim-voice"
 SOCK = os.environ["XDG_RUNTIME_DIR"] + "/shittim-voice.sock"
+# 설정 → 소리: 목소리 크기(voiceVol, 시스템 음량과 따로)와 목소리 언어(voiceLang)
+try: CFG = json.load(open(HOME + "/.config/shittim/arona.json"))
+except Exception: CFG = {}
+try: VOL = max(0.0, min(1.0, float(CFG.get("voiceVol", 1))))   # pw-play --volume 은 0~1
+except (TypeError, ValueError): VOL = 1.0
+
+def voice(who):
+    """일본어를 골랐고 일본어 목소리(tools/voice-setup-ja.sh 로 만든 <who>-ja)가 있으면 그것, 없으면 한국어 그대로."""
+    ja = who + "-ja"
+    return ja if CFG.get("voiceLang") == "ja" and os.path.exists(f"{D}/voices/{ja}/gpt.ckpt") else who
 
 def send(msg, start):
     for i in range(60):
@@ -30,10 +40,11 @@ elif a[:1] == ["--render"]:
     r = s.makefile().readline().strip() if s else "error 데몬 없음"
     if r != "ok": sys.exit(r)
 else:
-    who, text, key = a[0], a[1], (a[2] if len(a) > 2 else "")
+    who, text, key = voice(a[0]), a[1], (a[2] if len(a) > 2 else "")
     wav = f"{HOME}/.config/quickshell/assets/voice/{who}/{key}.wav"
     if key and os.path.exists(wav):
         send({"stop": True}, False)
         subprocess.run(["pkill", "-f", "^pw-play --media-role Communication "])
-        os.execvp("pw-play", ["pw-play", "--media-role", "Communication", wav])
-    elif os.path.exists(f"{D}/voices/{who}/gpt.ckpt"): send({"who": who, "text": text}, True)
+        os.execvp("pw-play", ["pw-play", "--media-role", "Communication", "--volume", str(VOL), wav])
+    # 일본어 목소리인데 미리 만든 파일이 없는 말(대화 답변 등)은 일본어 목소리가 한국어 글을 그대로 읽는다
+    elif os.path.exists(f"{D}/voices/{who}/gpt.ckpt"): send({"who": who, "text": text, "vol": VOL}, True)

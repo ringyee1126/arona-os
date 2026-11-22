@@ -1,0 +1,9 @@
+#!/bin/sh
+# greetd 의 로그인 화면 (greeter 사용자로 실행된다; /etc/greetd/config.toml).
+# 그래픽 로그인 화면이 3초도 못 버티고 끝나면(그래픽 문제, 설정 오류) 글자 로그인(agreety)으로 넘어간다:
+# 어떤 경우에도 로그인은 할 수 있게. (정상 로그인은 화면이 뜨고 비밀번호를 치는 데만 3초가 넘는다.)
+export HOME=/var/lib/shittim-greeter     # greeter 사용자는 홈이 없다. 성격(아로나/프라나)은 shittim-greeter-sync 가 여기에 적어 둔다
+s=$(date +%s)
+start-hyprland -- --config /etc/greetd/hyprland.lua >/dev/null 2>&1
+[ $(($(date +%s) - s)) -ge 3 ] && exit 0
+exec agreety --cmd "bash -lc 'exec start-hyprland'"

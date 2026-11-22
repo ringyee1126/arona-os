@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=ARONA OS 업데이트
+Comment=GitHub에서 최신 ARONA OS를 받아 적용합니다
+Exec=kitty --hold bash -c "curl -fsSL https://raw.githubusercontent.com/ringyee1126/arona-os/main/tools/update.sh | bash"
+Icon=system-software-update
+Terminal=false
+Categories=System;

@@ -6,8 +6,11 @@ Q = pathlib.Path.home() / ".config/quickshell"
 src = (Q / "Arona.qml").read_text()
 force = "--force" in sys.argv
 for who in [a for a in sys.argv[1:] if not a.startswith("-")] or ["arona", "plana"]:
-    block = src.split(f"readonly property var {who}Lines: ({{", 1)[1].split("})", 1)[0]
-    lines = {k: json.loads(f'"{t}"') for k, t in re.findall(r'^\s*"([\w-]+)":\s*"((?:[^"\\]|\\.)*)",?\s*$', block, re.M)}
+    if who.endswith("-ja"):      # 일본어 목소리(arona-ja, plana-ja): 대본은 voice-lines-ja.json (Arona.qml 의 대사를 옮긴 것, 같은 이름)
+        lines = json.loads((pathlib.Path(__file__).parent / "voice-lines-ja.json").read_text())[who[:-3]]
+    else:
+        block = src.split(f"readonly property var {who}Lines: ({{", 1)[1].split("})", 1)[0]
+        lines = {k: json.loads(f'"{t}"') for k, t in re.findall(r'^\s*"([\w-]+)":\s*"((?:[^"\\]|\\.)*)",?\s*$', block, re.M)}
     assert len(lines) > 50, len(lines)
     out = Q / "assets/voice" / who; out.mkdir(parents=True, exist_ok=True)
     for i, (k, t) in enumerate(lines.items(), 1):

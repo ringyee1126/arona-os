@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ARONA OS 업데이트: 이미 설치해서 쓰고 있는 컴퓨터를 최신 상태로 만든다 (다시 설치하지 않는다).
-#   터미널(Super+Enter)에서:  curl -fsSL https://raw.githubusercontent.com/ringyee1126/arona-os/main/tools/update.sh | bash
+#   터미널(Super+Enter)에서:  curl -fsSL https://raw.githubusercontent.com/ringyee1126/arona-os/master/tools/update.sh | bash
 #   한 번 하고 나면:          아로나 검색 → "ARONA OS 업데이트"
 # 하는 일: 1) 최신 파일 받기(~/.local/share/arona-os)  2) 셸·단축키·스크립트 바꾸기(바뀌는 파일은 백업)  3) 관리자 권한 부분(apply-update.sh)
 # 건드리지 않는 것: 설정 값(~/.config/shittim), 만든 목소리, 음악·다운로드, 직접 깐 프로그램.
@@ -13,7 +13,7 @@ fi
 D=~/.local/share/arona-os; B=~/.cache/arona-os-update/backup-$(date +%Y%m%d-%H%M%S); S=$D/airootfs/home/sensei
 
 echo "== 최신 파일 받는 중…"
-if [[ -d $D/.git ]]; then git -C "$D" fetch -q --depth 1 origin main && git -C "$D" reset -q --hard FETCH_HEAD
+if [[ -d $D/.git ]]; then git -C "$D" fetch -q --depth 1 origin master && git -C "$D" reset -q --hard FETCH_HEAD
 else git clone -q --depth 1 https://github.com/ringyee1126/arona-os.git "$D"; fi
 
 echo "== 셸 · 단축키 · 스크립트"

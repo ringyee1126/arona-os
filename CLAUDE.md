@@ -292,5 +292,5 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
   (VOC_JP 꺼내기·받아쓰기·참조 고르기만 확인). `Arona.qml` 의 대사를 고치면 `voice-lines-ja.json` 도 고칠 것.
 - 알림 모아 보기: `NotifCenter.qml`, MomoTalk 카드의 분홍 머리 = `Ui.notifsOpen` (`quickshell ipc call notifs toggle`).
 - **아직 GitHub 에 올리지 않았다 (사용자 결정, 2026-11-22): 이 노트북에서 먼저 시험.** 로컬 커밋만 있다. 사용자가 `sudo bash ~/shittim-os/tools/apply-update.sh`
-  → 다시 시작 → 로그인 화면 확인 후 "배포해줘"라고 하면: `git push origin main` + `gh release create`(업데이트 안내, README 의 "업데이트" 절 내용, `tools/update.sh` 첨부).
+  → 다시 시작 → 로그인 화면 확인 후 "배포해줘"라고 하면: `git push origin master` + `gh release create`(업데이트 안내, README 의 "업데이트" 절 내용, `tools/update.sh` 첨부).
   ISO 는 다시 만들지 않는다(사용자 요청) - 2026-11-22 ISO 로 설치한 사람은 설치 뒤 업데이트를 실행한다.

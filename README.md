@@ -23,7 +23,7 @@ ISO 는 3GB 가 넘어 [Releases](../../releases) 에 조각 2개로 올라가 �
 다시 설치하지 않는다. 터미널(Super+Enter)에 아래 한 줄을 붙여 넣는다. 중간에 비밀번호를 한 번 묻고, 끝나면 다시 시작한다.
 
 ```
-curl -fsSL https://raw.githubusercontent.com/ringyee1126/arona-os/main/tools/update.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ringyee1126/arona-os/master/tools/update.sh | bash
 ```
 
 한 번 하고 나면 다음부터는 **아로나 검색 → "ARONA OS 업데이트"** 를 누르면 된다.

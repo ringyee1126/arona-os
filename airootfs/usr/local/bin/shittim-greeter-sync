@@ -3,10 +3,17 @@
 # (shittim-postinstall, 그리고 성격이 바뀔 때 shittim-splash-who).
 # greeter 사용자는 /home/sensei 를 읽지 못한다(읽게 해서도 안 된다): QML 과 그림만 /usr/share/shittim-greeter 로 옮긴다.
 # 목소리와 API 키(arona.json)는 옮기지 않는다. 성격(아로나/프라나)만 알려 준다.
+# 보안: sensei 의 폴더는 sensei 권한으로만 읽는다 - 루트로 읽으면 그 폴더를 심볼릭 링크로 바꿔 루트만 볼 수 있는 파일을
+# 모두가 읽는 곳으로 빼낼 수 있다. 받는 쪽 폴더는 전부 루트 소유다 (greeter 가 링크를 심어 루트가 엉뚱한 파일을 덮어쓰지 못하게).
 Q=/home/sensei/.config/quickshell; D=/usr/share/shittim-greeter; H=/var/lib/shittim-greeter
-[ -f $Q/greeter.qml ] || exit 0
-mkdir -p $D $H/.config/shittim
-rsync -a --delete --exclude=assets/voice --exclude=.omc --chown=root:root --chmod=D755,F644 $Q/ $D/ || exit 1
-who=arona; grep -Eqs '"persona" *: *"plana"' /home/sensei/.config/shittim/arona.json && who=plana
+as() { runuser -u sensei -- "$@"; }
+as test -f $Q/greeter.qml || exit 0
+N=$(mktemp -d /usr/share/shittim-greeter.XXXXXX) || exit 1
+as tar -C $Q --exclude=./assets/voice --exclude=./.omc -cf - . | tar -C "$N" -xf - --no-same-owner --no-same-permissions \
+    && [ -f "$N/greeter.qml" ] || { rm -rf "$N"; exit 1; }
+chown -R root:root "$N"; chmod -R u=rwX,go=rX,a-s "$N"
+rm -rf $D && mv "$N" $D || exit 1
+
+who=arona; as grep -Eqs '"persona" *: *"plana"' /home/sensei/.config/shittim/arona.json && who=plana
+rm -rf $H && install -d -m755 -o root -g root $H/.config/shittim || exit 1
 printf '{"persona": "%s", "voice": false}\n' $who > $H/.config/shittim/arona.json
-chown -R greeter:greeter $H 2>/dev/null || true     # greeter 사용자는 greetd 패키지가 만든다

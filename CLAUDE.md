@@ -275,7 +275,7 @@ OS설치하면서 삭제된 아로나의 curious 표정을 다시 만들어줘.
 - 로그인: **greetd** → `/usr/local/bin/shittim-greeter`(greeter 사용자) → `start-hyprland -- --config /etc/greetd/hyprland.lua` → `greeter.qml`
   (`LockView` 재사용, `Quickshell.Services.Greetd`). 비밀번호가 맞으면 `bash -lc 'exec start-hyprland'` 를 `SHITTIM_GREETED=1` 로 시작하고,
   그 값이 있으면 셸·hyprland.lua 가 시작할 때 잠그지 않는다. 값이 없는 곳(설치 USB, 아직 업데이트 안 한 컴퓨터)은 예전처럼 바로 잠근다.
-  greeter 는 `/home/sensei` 를 못 읽어서 `shittim-greeter-sync`(루트)가 QML·그림을 `/usr/share/shittim-greeter` 로, 성격만 `/var/lib/shittim-greeter` 로 복사한다
+  greeter 는 `/home/sensei` 를 못 읽어서 `shittim-greeter-sync`(루트)가 QML·그림을 `/usr/share/shittim-greeter` 로, 성격만 `/var/lib/shittim-greeter`(루트 소유, 읽기 전용) 로 복사한다. sensei 의 폴더는 `runuser -u sensei` 로만 읽는다(루트로 읽으면 심볼릭 링크로 루트 파일을 빼낼 수 있다)
   (**QML 을 고친 뒤 로그인 화면에도 반영하려면 `sudo shittim-greeter-sync`**; 성격이 바뀌면 shittim-splash-who 가 부른다). 로그인 화면에서는 목소리가 안 난다.
   로그인 화면이 3초 안에 죽으면 글자 로그인(agreety). QML 에서 `id: ctl`/`id: login` 은 LockView 의 같은 이름 속성에 가려진다 → `id: auth`.
 - 시험: `tools/fake-greetd.py`(가짜 greetd) + 창 안의 Hyprland(`Hyprland --config <greeter 설정>`)로 화면과 인증 흐름(틀림 → 다시 → 맞음 → start_session)을 확인했다.

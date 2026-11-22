@@ -3,6 +3,8 @@
 # 그래픽 로그인 화면이 3초도 못 버티고 끝나면(그래픽 문제, 설정 오류) 글자 로그인(agreety)으로 넘어간다:
 # 어떤 경우에도 로그인은 할 수 있게. (정상 로그인은 화면이 뜨고 비밀번호를 치는 데만 3초가 넘는다.)
 export HOME=/var/lib/shittim-greeter     # greeter 사용자는 홈이 없다. 성격(아로나/프라나)은 shittim-greeter-sync 가 여기에 적어 둔다
+# 그 폴더는 루트 소유(읽기만): 캐시 등 쓰는 것은 로그아웃하면 사라지는 실행 폴더로 보낸다
+export XDG_CACHE_HOME="$XDG_RUNTIME_DIR/cache" XDG_STATE_HOME="$XDG_RUNTIME_DIR/state" XDG_DATA_HOME="$XDG_RUNTIME_DIR/data"
 s=$(date +%s)
 start-hyprland -- --config /etc/greetd/hyprland.lua >/dev/null 2>&1
 [ $(($(date +%s) - s)) -ge 3 ] && exit 0

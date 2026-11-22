@@ -32,7 +32,7 @@ curl -fsSL https://raw.githubusercontent.com/ringyee1126/arona-os/master/tools/u
 - 설정 값·API 키·만든 목소리·음악·직접 깐 프로그램은 그대로 둔다. 바뀌는 파일의 이전 판은 `~/.cache/arona-os-update/` 에 남는다.
 - 시작하기 전에 스냅샷을 만든다. 문제가 생기면 부팅할 때 Esc → GRUB 메뉴 → 스냅샷 "ARONA OS 업데이트 전".
 
-### 2026-11-23 업데이트 내용
+### 2026-11-22 업데이트 내용
 
 - **보안: 로그인 방식 변경.** 전에는 비밀번호 없이 자동 로그인한 뒤 잠금화면으로 덮기만 했다. 이제 로그인 관리자(greetd)가
   같은 모양의 로그인 화면을 띄우고, 비밀번호가 맞아야 세션이 시작된다. 로그인 화면이 뜨지 못하면 글자 로그인으로 넘어간다.
@@ -42,6 +42,7 @@ curl -fsSL https://raw.githubusercontent.com/ringyee1126/arona-os/master/tools/u
 - 화면 오른쪽 위에 뜨던 "Runtime error in lua" 알림 제거 (오류는 `~/.cache/shittim-lua.log` 에 기록).
 - 바탕화면 MomoTalk 의 분홍색 머리를 누르면 알림을 모아 보는 창.
 - 설정 → 소리: 목소리 크기(시스템 음량과 따로), 목소리 언어(한국어 / 일본어).
+- 로그인 화면에서도 목소리가 나온다 (틀린 비밀번호 등). 로그인 직후에는 "어서 오세요" 인사.
 
 ### 일본어 목소리
 
